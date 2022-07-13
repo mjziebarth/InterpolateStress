@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <data.hpp>
+#include <algorithm>
 #include <vantagetree.hpp>
 #include <exitcondition.hpp>
 
@@ -84,6 +85,36 @@ interpolate_point(const point_t& p,
                   const data_weighting_t& data_weighting
                  )
 {
+	/* Determine all points within the longest radius: */
+	std::vector<int> largest_neighbor_set(tree.within_range(p,search_radii[0],
+	                                                        data));
+
+	/* Compute the weights: */
+	std::vector<std::pair<double,data_t>> w_d_lns(largest_neighbor_set.size());
+	{
+		auto it = w_d_lns.begin();
+		for (int i : largest_neighbor_set){
+			it->first = data_weighting(p, i, data);
+			it->second = data[i];
+			++it;
+		}
+	}
+
+	/* Order by distance: */
+	struct ri_t {
+		double r;
+		size_t j;
+		bool operator<(const ri_t& other) const {
+			return r < other.r;
+		};
+	};
+	std::vector<ri_t> distance_ordered(w_d_lns.size());
+	for (size_t j=0; j<largest_neighbor_set.size(); ++j){
+		int i = largest_neighbor_set[j];
+		distance_ordered[j] = {.r=tree.distance(p, data[i].pt), .j=j};
+	}
+	std::sort(distance_ordered.begin(), distance_ordered.end());
+
 	typedef typename data_t::result_t result_t;
 	/* */
 	bool success = false;
@@ -91,19 +122,27 @@ interpolate_point(const point_t& p,
 	smallest_res_t<result_t,failpol> last;
 	for (double r : search_radii){
 		/* Obtain all data records within range: */
-		std::vector<int> neighbors(tree.within_range(p,r,data));
+		const auto end = std::upper_bound(distance_ordered.begin(),
+		                                  distance_ordered.end(),
+		                                  ri_t({.r=r, .j=0}));
+		const size_t M = end - distance_ordered.begin();
+		std::vector<int> neighbors(M, 0);
+		auto itn = neighbors.begin();
+		for (auto it = distance_ordered.begin(); it != end; ++it){
+			*itn = largest_neighbor_set[it->j];
+			++itn;
+		}
 
 		/* Check minimum size: */
-		if (!exit_condition.size_ok(neighbors.size()))
+		if (!exit_condition.size_ok(M))
 			continue;
 
 		/* Compute the weights: */
-		std::vector<std::pair<double,data_t>> w_d(neighbors.size());
-		auto it = w_d.begin();
-		for (int i : neighbors){
-			it->first = data_weighting(p, i, data);
-			it->second = data[i];
-			++it;
+		std::vector<std::pair<double,data_t>> w_d(M);
+		auto itw = w_d.begin();
+		for (auto it = distance_ordered.begin(); it != end; ++it){
+			*itw = w_d_lns[it->j];
+			++itw;
 		}
 
 		/* Compute the result: */
