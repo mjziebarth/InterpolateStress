@@ -160,11 +160,16 @@ interpolate(const std::vector<point_t>& pts,
 	std::vector<interpolated_t<typename data_t::result_t>> res(pts.size());
 	#pragma omp parallel for
 	for (size_t i=0; i<pts.size(); ++i){
-		res[i]
-		   = interpolate_point<data_t, exit_condition_t,
-		                       data_weighting_t, failpol>
-		         (pts[i], data, tree, search_radii, exit_condition,
-		          data_weighting);
+		try {
+			res[i]
+			   = interpolate_point<data_t, exit_condition_t,
+			                       data_weighting_t, failpol>
+			         (pts[i], data, tree, search_radii, exit_condition,
+			          data_weighting);
+		} catch (...) {
+			res[i].res.set_nan();
+			res[i].r = std::nan("");
+		}
 	}
 	return res;
 }
