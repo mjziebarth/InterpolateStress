@@ -43,6 +43,8 @@ public:
 	std::vector<int> within_range(const point_t& p, double r,
 	                              const std::vector<data_t>& data) const;
 
+	double distance(const point_t& p0, const point_t& p1) const;
+
 private:
 	GeographicLib::Geodesic geod;
 	typedef std::function<double(const data_t&, const data_t&)> distfun_t;
@@ -100,6 +102,15 @@ VantageTree<data_t>::within_range(const point_t& p, double r,
 		throw std::runtime_error("Returned negative int in tree.Search.");
 
 	return ids;
+}
+
+template<typename data_t>
+double VantageTree<data_t>::distance(const point_t& p0,
+                                     const point_t& p1) const
+{
+	double distance = 0;
+	geod.Inverse(p0.lat, p0.lon, p1.lat, p1.lon, distance);
+	return distance;
 }
 
 
