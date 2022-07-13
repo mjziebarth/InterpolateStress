@@ -40,7 +40,41 @@ struct interpolated_t {
 };
 
 
-template<typename data_t, typename exit_condition_t, typename data_weighting_t>
+/*
+ * This enum defines how to handle cases in which the exit condition
+ * cannot be fulfilled.
+ *   FAIL_NAN :
+ */
+enum failure_policy {
+	FAIL_NAN, FAIL_SMALLEST_NMIN_R
+};
+
+template<typename data_t, failure_policy faipol>
+struct smallest_res_t {
+	smallest_res_t() = default;
+	smallest_res_t(double r, const data_t& last)
+	{};
+	constexpr static double r = -1.0;
+	data_t get_res() const {
+		return data_t();
+	}
+};
+
+template<typename data_t>
+struct smallest_res_t<data_t,FAIL_SMALLEST_NMIN_R> {
+	smallest_res_t() : r(-1.0) {};
+	smallest_res_t(double r, const data_t& last) : r(r), dat(last) {};
+	double r;
+	data_t dat;
+	data_t get_res() const {
+		return dat;
+	};
+};
+
+
+
+template<typename data_t, typename exit_condition_t, typename data_weighting_t,
+         failure_policy failpol>
 interpolated_t<typename data_t::result_t>
 interpolate_point(const point_t& p,
                   const typename std::vector<data_t>& data,
@@ -54,6 +88,7 @@ interpolate_point(const point_t& p,
 	/* */
 	bool success = false;
 	interpolated_t<result_t> res;
+	smallest_res_t<result_t,failpol> last;
 	for (double r : search_radii){
 		/* Obtain all data records within range: */
 		std::vector<int> neighbors(tree.within_range(p,r,data));
@@ -74,6 +109,10 @@ interpolate_point(const point_t& p,
 		/* Compute the result: */
 		res.res = data_t::compute_result(w_d);
 
+		/* Save the last result (if needed): */
+		if (failpol == FAIL_SMALLEST_NMIN_R)
+			last = smallest_res_t<result_t,failpol>(r, res.res);
+
 		/* Exit condition: */
 		success = exit_condition.accept(res.res);
 		if (success){
@@ -84,15 +123,26 @@ interpolate_point(const point_t& p,
 
 	/* If we did not succeed, return NaN: */
 	if (!success){
-		res.res.set_nan();
-		res.r = std::nan("");
+		if (failpol == FAIL_NAN){
+			res.res.set_nan();
+			res.r = std::nan("");
+		} else if (failpol == FAIL_SMALLEST_NMIN_R) {
+			if (last.r > 0){
+				res.r = last.r;
+				res.res = last.get_res();
+			} else {
+				res.res.set_nan();
+				res.r = std::nan("");
+			}
+		}
 	}
 
 	return res;
 }
 
 
-template<typename data_t, typename exit_condition_t, typename data_weighting_t>
+template<failure_policy failpol, typename data_t, typename exit_condition_t,
+         typename data_weighting_t>
 std::vector<interpolated_t<typename data_t::result_t>>
 interpolate(const std::vector<point_t>& pts,
             const typename std::vector<data_t>& data,
@@ -105,8 +155,11 @@ interpolate(const std::vector<point_t>& pts,
 	std::vector<interpolated_t<typename data_t::result_t>> res(pts.size());
 	#pragma omp parallel for
 	for (size_t i=0; i<pts.size(); ++i){
-		res[i] = interpolate_point(pts[i], data, tree, search_radii,
-		                           exit_condition, data_weighting);
+		res[i]
+		   = interpolate_point<data_t, exit_condition_t,
+		                       data_weighting_t, failpol>
+		         (pts[i], data, tree, search_radii, exit_condition,
+		          data_weighting);
 	}
 	return res;
 }

@@ -18,11 +18,15 @@
 # limitations under the Licence.
 
 cdef extern from "api.hpp" namespace "interpolatestress":
+    const unsigned char FAILURE_POLICY_NAN
+    const unsigned char FAILURE_POLICY_SMALLEST_R_WITH_NMIN
+
     void interpolate_azimuth_uniform(size_t N, const double* lon,
              const double* lat, const double* azi, const double* w,
              size_t Nr, const double* r, size_t Ng, const double* lon_g,
              const double* lat_g, double* azi_g, double* azi_std_g,
              double* r_g, double critical_azi_std, size_t Nmin,
+             unsigned char failure_policy,
              double a, double f) except+
 
     void interpolate_azimuth_gauss(size_t N, const double* lon,
@@ -30,7 +34,8 @@ cdef extern from "api.hpp" namespace "interpolatestress":
              size_t Nr, const double* r, size_t Ng, const double* lon_g,
              const double* lat_g, double* azi_g, double* azi_std_g,
              double* r_g, double critical_azi_std, size_t Nmin,
-             double kernel_bandwidth, double a, double f) except+
+             unsigned char failure_policy, double kernel_bandwidth,
+             double a, double f) except+
 
 
 import numpy as np
@@ -43,6 +48,7 @@ def interpolate_azimuth(const double[:] lon, const double[:] lat,
                         const double[:] search_radii,
                         const double[:] lon_g, const double[:] lat_g,
                         double critical_azi_std, size_t Nmin,
+                        str failure_policy,
                         kernel, double a, double f):
     """
     Interpolate the stress tensor.
@@ -70,6 +76,17 @@ def interpolate_azimuth(const double[:] lon, const double[:] lat,
        Nmin             : Minimum number of data points within a search
                           radius required to accept the radius.
                           int.
+       failure_policy   : How to handle interpolations at destination points
+                          where the search criteria cannot be fulfilled
+                          simultaneously. Must be one of the following
+                          options:
+                            - "nan":
+                               Fill result at grid cells with nan
+                            - "smallest":
+                               Take the smallest search radius with N>=Nmin
+                               data points in range, and use the resulting
+                               mean and standard deviation. If no search
+                               radius has enough points, fill result with nan.
        kernel           : Spatial weighting kernel to use. Must be an instance
                           of one of the kernels defined in the
                           interpolatestress.kernel submodule.
@@ -107,20 +124,30 @@ def interpolate_azimuth(const double[:] lon, const double[:] lat,
     cdef double[:] azi_std_g = np.empty(Ng)
     cdef double[:] r_g = np.empty(Ng)
 
+    cdef unsigned char failure_policy_cpp
+    if failure_policy == "nan":
+        failure_policy_cpp = FAILURE_POLICY_NAN
+    elif failure_policy == "smallest":
+        failure_policy_cpp = FAILURE_POLICY_SMALLEST_R_WITH_NMIN
+    else:
+        raise RuntimeError("`failure_policy` must be one of 'nan' or "
+                           "'smallest'.")
+
     cdef double kernel_bandwidth
     if isinstance(kernel, UniformKernel):
         interpolate_azimuth_uniform(N, &lon[0], &lat[0], &azi[0], &weight[0],
                                     search_radii.size, &search_radii[0],
                                     Ng, &lon_g[0], &lat_g[0], &azi_g[0],
                                     &azi_std_g[0], &r_g[0], critical_azi_std,
-                                    Nmin, a, f)
+                                    Nmin, failure_policy_cpp, a, f)
     elif isinstance(kernel, GaussianKernel):
         kernel_bandwidth = kernel._bandwidth
         interpolate_azimuth_gauss(N, &lon[0], &lat[0], &azi[0], &weight[0],
                                   search_radii.size, &search_radii[0],
                                   Ng, &lon_g[0], &lat_g[0], &azi_g[0],
                                   &azi_std_g[0], &r_g[0], critical_azi_std,
-                                  Nmin, kernel_bandwidth, a, f)
+                                  Nmin, failure_policy_cpp,
+                                  kernel_bandwidth, a, f)
     else:
         raise TypeError("`kernel` must be a kernel from the "
                         "interpolatestress.kernel submodule.")

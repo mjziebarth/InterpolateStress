@@ -24,6 +24,10 @@
 
 namespace interpolatestress {
 
+constexpr unsigned char FAILURE_POLICY_NAN = 0;
+constexpr unsigned char FAILURE_POLICY_SMALLEST_R_WITH_NMIN = 1;
+
+
 /*
  * Uniform kernel.
  */
@@ -34,6 +38,7 @@ void interpolate_azimuth_uniform(size_t N, const double* lon, const double* lat,
                                  const double* lat_g, double* azi_g,
                                  double* azi_std_g, double* r_g,
                                  double critical_azi_std, size_t Nmin,
+                                 unsigned char failure_policy,
                                  double a, double f);
 
 
@@ -47,6 +52,7 @@ void interpolate_azimuth_gauss(size_t N, const double* lon, const double* lat,
                                const double* lat_g, double* azi_g,
                                double* azi_std_g, double* r_g,
                                double critical_azi_std, size_t Nmin,
+                               unsigned char failure_policy,
                                double kernel_bandwidth,
                                double a, double f);
 

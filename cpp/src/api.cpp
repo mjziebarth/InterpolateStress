@@ -27,6 +27,8 @@
 
 using interpolatestress::point_t;
 using interpolatestress::data_azi_t;
+using interpolatestress::FAIL_NAN;
+using interpolatestress::FAIL_SMALLEST_NMIN_R;
 
 
 static std::vector<point_t>
@@ -63,6 +65,7 @@ void interpolatestress::interpolate_azimuth_uniform(size_t N, const double* lon,
                          size_t Ng, const double* lon_g, const double* lat_g,
                          double* azi_g, double* azi_std_g, double* r_g,
                          double critical_azi_std, size_t Nmin,
+                         unsigned char failure_policy,
                          double a, double f)
 {
 	typedef data_azi_t data_t;
@@ -84,8 +87,14 @@ void interpolatestress::interpolate_azimuth_uniform(size_t N, const double* lon,
 	/* Exit condition: */
 	ExitConditionAzimuthStd<data_t> exit_condition(Nmin, critical_azi_std);
 
-	std::vector<interp_t> result(interpolate(grid, data, tree, search_radii,
-	                                         exit_condition, weighting));
+	std::vector<interp_t> result(0);
+	if (failure_policy == FAILURE_POLICY_NAN)
+		result = interpolate<FAIL_NAN>(grid, data, tree, search_radii,
+		                               exit_condition, weighting);
+	else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
+		result = interpolate<FAIL_SMALLEST_NMIN_R>(grid, data, tree,
+		                                           search_radii, exit_condition,
+		                                           weighting);
 
 	/* Transfer results: */
 	for (size_t i=0; i<Ng; ++i){
@@ -107,6 +116,7 @@ void interpolatestress::interpolate_azimuth_gauss(size_t N, const double* lon,
                          size_t Ng, const double* lon_g, const double* lat_g,
                          double* azi_g, double* azi_std_g, double* r_g,
                          double critical_azi_std, size_t Nmin,
+                         unsigned char failure_policy,
                          double kernel_bandwidth, double a, double f)
 {
 	typedef data_azi_t data_t;
@@ -129,8 +139,14 @@ void interpolatestress::interpolate_azimuth_gauss(size_t N, const double* lon,
 	/* Exit condition: */
 	ExitConditionAzimuthStd<data_t> exit_condition(Nmin, critical_azi_std);
 
-	std::vector<interp_t> result(interpolate(grid, data, tree, search_radii,
-	                                         exit_condition, weighting));
+	std::vector<interp_t> result(0);
+	if (failure_policy == FAILURE_POLICY_NAN)
+		result = interpolate<FAIL_NAN>(grid, data, tree, search_radii,
+		                               exit_condition, weighting);
+	else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
+		result = interpolate<FAIL_SMALLEST_NMIN_R>(grid, data, tree,
+		                                           search_radii, exit_condition,
+		                                           weighting);
 
 	/* Transfer results: */
 	for (size_t i=0; i<Ng; ++i){
