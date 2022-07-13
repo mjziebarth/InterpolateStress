@@ -75,6 +75,20 @@ def interpolate_azimuth(const double[:] lon, const double[:] lat,
                           interpolatestress.kernel submodule.
        a                : Ellipsoid large half axis. Float.
        f                : Ellipsoid flattening. Float.
+
+    Returns:
+       azi_g, azi_std_g, r_g
+
+       azi_g     : Mean azimuth evaluated at the (flattened) grid points.
+                   Shape (Ng,)
+       azi_std_g : Standard deviation of azimuth evalauted at the grid points.
+                   Shape (Ng,)
+       r_g       : Search radii at the grid points.
+                   Shape (Ng,)
+
+    If the search algorithm failed at a grid point because the termination
+    conditions could not be satisfied (simultaneously), NaN is returned in
+    each of the three arrays at the corresponding index.
     """
     # Sanity checks:
     cdef size_t N = lon.size
