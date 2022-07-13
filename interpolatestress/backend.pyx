@@ -46,6 +46,35 @@ def interpolate_azimuth(const double[:] lon, const double[:] lat,
                         kernel, double a, double f):
     """
     Interpolate the stress tensor.
+
+    Call signature:
+       interpolate_azimuth(lon, lat, azi, weight, search_radii,
+                           lon_g, lat_g, critical_azi_std, Nmin,
+                           kernel, a, f)
+
+    Parameters:
+       lon              : Data point longitudes of shape (N,)
+       lat              : Data point latitudes of shape (N,)
+       azi              : Azimuths at the data points, shape (N,)
+       weight           : Weighting of the data points, shape (N,)
+       search_radii     : Array of search radii, from large to small.
+                          Shape (Nr,)
+       lon_g            : Longitudes of the interpolated grid, flattened.
+                          Shape (Ng,)
+       lat_g            : Latitudes of the interpolated grid, flattened.
+                          Shape (Ng,)
+       critical_azi_std : Target standard deviation of the azimuth within
+                          a search radius below which the search radius is
+                          accepted.
+                          Float.
+       Nmin             : Minimum number of data points within a search
+                          radius required to accept the radius.
+                          int.
+       kernel           : Spatial weighting kernel to use. Must be an instance
+                          of one of the kernels defined in the
+                          interpolatestress.kernel submodule.
+       a                : Ellipsoid large half axis. Float.
+       f                : Ellipsoid flattening. Float.
     """
     # Sanity checks:
     cdef size_t N = lon.size
