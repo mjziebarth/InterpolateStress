@@ -8,7 +8,8 @@ include = include_directories('cpp/include')
 
 libinterpolatestress = static_library(
                'interpolatestress',
-               ['cpp/src/kernel.cpp', 'cpp/src/data.cpp', 'cpp/src/api.cpp'],
+               ['cpp/src/kernel.cpp', 'cpp/src/data.cpp', 'cpp/src/api.cpp',
+                'cpp/src/interpolate.cpp'],
                dependencies : [geographiclib_dep, dependency('openmp')],
                include_directories : include)
 

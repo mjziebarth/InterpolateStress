@@ -140,6 +140,8 @@ interpolate_point(const point_t& p,
 	return res;
 }
 
+void sanity_check_radii(const std::vector<double>& search_radii);
+
 
 template<failure_policy failpol, typename data_t, typename exit_condition_t,
          typename data_weighting_t>
@@ -152,6 +154,9 @@ interpolate(const std::vector<point_t>& pts,
             const data_weighting_t& data_weighting
            )
 {
+	/* Assert that the radii are descending: */
+	sanity_check_radii(search_radii);
+
 	std::vector<interpolated_t<typename data_t::result_t>> res(pts.size());
 	#pragma omp parallel for
 	for (size_t i=0; i<pts.size(); ++i){
