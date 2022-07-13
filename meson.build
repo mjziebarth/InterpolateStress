@@ -5,7 +5,7 @@ geographiclib_dep = dependency('geographiclib')
 
 include = include_directories('cpp/include')
 
-libinterpolatestress = shared_library(
+libinterpolatestress = static_library(
                'interpolatestress',
                ['cpp/src/kernel.cpp', 'cpp/src/data.cpp', 'cpp/src/api.cpp'],
                dependencies : [geographiclib_dep],
