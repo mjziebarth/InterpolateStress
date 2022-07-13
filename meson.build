@@ -1,5 +1,6 @@
-project('InterpolateStress','Cpp','cython')
-
+project('InterpolateStress','cpp','cython',
+        default_options : ['optimization=3'])
+add_project_arguments(['-march=native','-mtune=native'], language : 'cpp')
 
 geographiclib_dep = dependency('geographiclib')
 
