@@ -17,7 +17,7 @@
 # See the Licence for the specific language governing permissions and
 # limitations under the Licence.
 
-cdef extern from "api.hpp" namespace "interpolatestress":
+cdef extern from "api.hpp" namespace "interpolatestress" nogil:
     const unsigned char FAILURE_POLICY_NAN
     const unsigned char FAILURE_POLICY_SMALLEST_R_WITH_NMIN
 
@@ -43,10 +43,10 @@ from .kernel import UniformKernel, GaussianKernel
 
 
 
-def interpolate_azimuth(const double[:] lon, const double[:] lat,
-                        const double[:] azi, const double[:] weight,
-                        const double[:] search_radii,
-                        const double[:] lon_g, const double[:] lat_g,
+def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
+                        const double[::1] azi, const double[::1] weight,
+                        const double[::1] search_radii,
+                        const double[::1] lon_g, const double[::1] lat_g,
                         double critical_azi_std, size_t Nmin,
                         str failure_policy,
                         kernel, double a, double f):
@@ -120,9 +120,11 @@ def interpolate_azimuth(const double[:] lon, const double[:] lat,
     if lat_g.size != Ng:
         raise RuntimeError("Shapes of `lon_g` and `lat_g` not equal.")
 
-    cdef double[:] azi_g = np.empty(Ng)
-    cdef double[:] azi_std_g = np.empty(Ng)
-    cdef double[:] r_g = np.empty(Ng)
+    cdef double[::1] azi_g = np.empty(Ng)
+    cdef double[::1] azi_std_g = np.empty(Ng)
+    cdef double[::1] r_g = np.empty(Ng)
+
+    cdef size_t Nr = search_radii.size
 
     cdef unsigned char failure_policy_cpp
     if failure_policy == "nan":
@@ -135,19 +137,22 @@ def interpolate_azimuth(const double[:] lon, const double[:] lat,
 
     cdef double kernel_bandwidth
     if isinstance(kernel, UniformKernel):
-        interpolate_azimuth_uniform(N, &lon[0], &lat[0], &azi[0], &weight[0],
-                                    search_radii.size, &search_radii[0],
-                                    Ng, &lon_g[0], &lat_g[0], &azi_g[0],
-                                    &azi_std_g[0], &r_g[0], critical_azi_std,
-                                    Nmin, failure_policy_cpp, a, f)
+        with nogil:
+            interpolate_azimuth_uniform(N, &lon[0], &lat[0], &azi[0],
+                                        &weight[0], Nr, &search_radii[0],
+                                        Ng, &lon_g[0], &lat_g[0], &azi_g[0],
+                                        &azi_std_g[0], &r_g[0],
+                                        critical_azi_std, Nmin,
+                                        failure_policy_cpp, a, f)
     elif isinstance(kernel, GaussianKernel):
         kernel_bandwidth = kernel._bandwidth
-        interpolate_azimuth_gauss(N, &lon[0], &lat[0], &azi[0], &weight[0],
-                                  search_radii.size, &search_radii[0],
-                                  Ng, &lon_g[0], &lat_g[0], &azi_g[0],
-                                  &azi_std_g[0], &r_g[0], critical_azi_std,
-                                  Nmin, failure_policy_cpp,
-                                  kernel_bandwidth, a, f)
+        with nogil:
+            interpolate_azimuth_gauss(N, &lon[0], &lat[0], &azi[0], &weight[0],
+                                      Nr, &search_radii[0],
+                                      Ng, &lon_g[0], &lat_g[0], &azi_g[0],
+                                      &azi_std_g[0], &r_g[0], critical_azi_std,
+                                      Nmin, failure_policy_cpp,
+                                      kernel_bandwidth, a, f)
     else:
         raise TypeError("`kernel` must be a kernel from the "
                         "interpolatestress.kernel submodule.")
