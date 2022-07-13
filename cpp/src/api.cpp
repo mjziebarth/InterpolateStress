@@ -48,6 +48,8 @@ fill_data_azi(size_t N, const double* lon, const double* lat, const double* azi,
 	for (size_t i=0; i<N; ++i){
 		data[i].pt.lon = lon[i];
 		data[i].pt.lat = lat[i];
+		data[i].w = w[i];
+		data[i].azi = azi[i];
 	}
 	return data;
 
