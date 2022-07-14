@@ -26,6 +26,7 @@
 using interpolatestress::PI;
 using interpolatestress::data_azi_t;
 using interpolatestress::data_azi_2plunge_t;
+using interpolatestress::data_scalar_t;
 
 
 
@@ -35,7 +36,6 @@ void data_azi_t::result_t::set_nan() {
 	azi_std = std::nan("");
 }
 
-
 void data_azi_2plunge_t::result_t::set_nan() {
 	azi = std::nan("");
 	azi_std = std::nan("");
@@ -44,6 +44,11 @@ void data_azi_2plunge_t::result_t::set_nan() {
 	pl2 = std::nan("");
 	pl2_std = std::nan("");
 }
+
+void data_scalar_t::result_t::set_nan() {
+	z = nan;
+	z_std = nan;
+};
 
 
 /*
@@ -141,4 +146,36 @@ data_azi_2plunge_t::compute_result(
 		res.pl2_std = std::nan("");
 	}
 	return res;
+}
+
+data_scalar_t::result_t
+data_scalar_t::weighted_average(
+    const std::vector<std::pair<double,data_scalar_t>>& data
+)
+{
+	if (data.size() == 0)
+		return {.z=nan, .z_std=nan};
+	double W = 0.0;
+	double W2 = 0.0;
+	double val = 0.0;
+	for (auto d : data){
+		if (std::isnan(d.second.z))
+			continue;
+		W += d.first;
+		W2 += d.first * d.first;
+		val += d.first * d.second.z;
+	}
+	if (W == 0 || std::isinf(W)){
+		return {.z=nan, .z_std=nan};
+	}
+	val /= W;
+	double var = 0.0;
+	for (auto d : data){
+		if (std::isnan(d.second.z))
+			continue;
+		const double dz = d.second.z - val;
+		var += d.first * dz * dz;
+	}
+	var *= W / (W*W - W2);
+	return {.z=val, .z_std=std::sqrt(var)};
 }

@@ -206,6 +206,73 @@ interpolate(const std::vector<point_t>& pts,
 }
 
 
+/*
+ * Scalar interpolation:
+ */
+template<typename data_t, typename kernel_t>
+typename data_t::result_t
+interpolate_point(const std::pair<point_t,double>& pt_r,
+                  const std::vector<data_t>& data, size_t Nmin,
+                  const VantageTree<data_t>& tree, const kernel_t& kernel)
+{
+	/* Find all neighbors in range: */
+	const point_t p(pt_r.first);
+	double r = pt_r.second;
+	std::vector<int> neighbors(tree.within_range(p, r, data));
+
+	/* Make sure that we have Nmin: */
+	if (neighbors.size() < Nmin)
+		neighbors = tree.nearest(p, Nmin, data);
+
+	/* Compute distances, making sure that r is adjusted if it
+	 * is too low: */
+	std::vector<std::pair<double,data_t>> w_d(neighbors.size());
+	auto itw = w_d.begin();
+	for (int i : neighbors){
+		const double ri = tree.distance(p, data[i].pt);
+		itw->first = ri;
+		if (ri > r)
+			r = ri;
+		++itw;
+	}
+
+	/* Compute weights: */
+	itw = w_d.begin();
+	for (int i : neighbors){
+		itw->first = kernel(itw->first, r) * data[i].w;
+		itw->second = data[i];
+		++itw;
+	}
+
+	/* Return result: */
+	return data_t::weighted_average(w_d);
+}
+
+
+template<typename data_t, typename kernel_t>
+std::vector<typename data_t::result_t>
+interpolate(const std::vector<data_t>& data,
+            const std::vector<std::pair<point_t,double>>& dest,
+            const VantageTree<data_t>& tree, size_t Nmin,
+            const kernel_t& kernel)
+{
+	std::vector<typename data_t::result_t> res(dest.size());
+	if (data.size() >= Nmin){
+		#pragma omp parallel for
+		for (size_t i=0; i<dest.size(); ++i){
+			try {
+				res[i] = interpolate_point(dest[i], data, Nmin, tree, kernel);
+			} catch (...) {
+				res[i].set_nan();
+			}
+		}
+	} else {
+		for (auto r : res)
+			r.set_nan();
+	}
+	return res;
+}
+
 
 
 }

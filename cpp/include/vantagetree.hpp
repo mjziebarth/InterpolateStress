@@ -43,6 +43,9 @@ public:
 	std::vector<int> within_range(const point_t& p, double r,
 	                              const std::vector<data_t>& data) const;
 
+	std::vector<int> nearest(const point_t& p, size_t k,
+	                         const std::vector<data_t>& data) const;
+
 	double distance(const point_t& p0, const point_t& p1) const;
 
 private:
@@ -96,6 +99,34 @@ VantageTree<data_t>::within_range(const point_t& p, double r,
 	p_dat.pt = p;
 	std::vector<int> ids;
 	tree.Search(data, distfun, p_dat, ids, data.size(), r);
+
+	/* Sanity check: */
+	if (std::any_of(ids.begin(), ids.end(), [](int i)->bool {return i < 0;}))
+		throw std::runtime_error("Returned negative int in tree.Search.");
+
+	return ids;
+}
+
+template<typename data_t>
+std::vector<int>
+VantageTree<data_t>::nearest(const point_t& p, size_t k,
+                             const std::vector<data_t>& data) const
+{
+	/*
+	 * This function finds all nearest neighbors within range r
+	 * of point p.
+	 */
+	auto distfun = [&](const data_t& p0, const data_t& p1) -> double {
+		double distance = 0;
+		geod.Inverse(p0.pt.lat, p0.pt.lon, p1.pt.lat, p1.pt.lon, distance);
+		return distance;
+	};
+
+	/* Find indices as integers: */
+	data_t p_dat;
+	p_dat.pt = p;
+	std::vector<int> ids;
+	tree.Search(data, distfun, p_dat, ids, k);
 
 	/* Sanity check: */
 	if (std::any_of(ids.begin(), ids.end(), [](int i)->bool {return i < 0;}))

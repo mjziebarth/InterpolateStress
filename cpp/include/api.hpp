@@ -53,6 +53,12 @@ void interpolate_azimuth_plunges_uniform(
                          unsigned char failure_policy,
                          double a, double f);
 
+void interpolate_scalar_uniform(size_t N, const double* lon, const double* lat,
+                         const double* z, const double* w,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         const double* r_g, double* z_g, double* z_std_g,
+                         size_t Nmin, double a, double f);
+
 
 /*
  * Linear kernel.
@@ -78,6 +84,12 @@ void interpolate_azimuth_plunges_linear(
                          double* r_g, double critical_azi_std, size_t Nmin,
                          unsigned char failure_policy,
                          double a, double f);
+
+void interpolate_scalar_linear(size_t N, const double* lon, const double* lat,
+                         const double* z, const double* w,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         const double* r_g, double* z_g, double* z_std_g,
+                         size_t Nmin, double a, double f);
 
 
 /*
@@ -105,6 +117,13 @@ void interpolate_azimuth_plunges_gauss(
                          double* r_g, double critical_azi_std, size_t Nmin,
                          unsigned char failure_policy,
                          double kernel_bandwidth, double a, double f);
+
+void interpolate_scalar_gauss(size_t N, const double* lon, const double* lat,
+                         const double* z, const double* w,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         const double* r_g, double* z_g, double* z_std_g,
+                         size_t Nmin, double kernel_bandwidth, double a,
+                         double f);
 
 
 }

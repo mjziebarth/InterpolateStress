@@ -77,6 +77,28 @@ struct data_azi_2plunge_t {
 	                   data);
 };
 
+/*
+ * Scalar interpolation:
+ */
+
+struct data_scalar_t {
+	/* Data members: */
+	point_t pt;
+	double w = nan;
+	double z = nan;
+
+	/* Return type of an interpolation: */
+	struct result_t {
+		double z = nan;
+		double z_std = nan;
+
+		void set_nan();
+	};
+
+	static result_t
+	weighted_average(const std::vector<std::pair<double,data_scalar_t>>& data);
+};
+
 
 }
 

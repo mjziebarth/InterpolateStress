@@ -27,6 +27,7 @@
 using interpolatestress::point_t;
 using interpolatestress::data_azi_t;
 using interpolatestress::data_azi_2plunge_t;
+using interpolatestress::data_scalar_t;
 using interpolatestress::FAIL_NAN;
 using interpolatestress::FAIL_SMALLEST_NMIN_R;
 
@@ -69,6 +70,20 @@ fill_data_azi_plunges(size_t N, const double* lon, const double* lat,
 		data[i].azi = azi[i];
 		data[i].plunge1 = pl1[i];
 		data[i].plunge2 = pl2[i];
+	}
+	return data;
+}
+
+static std::vector<data_scalar_t>
+fill_data_scalar(size_t N, const double* lon, const double* lat,
+                 const double* z, const double* w)
+{
+	std::vector<data_scalar_t> data(N);
+	for (size_t i=0; i<N; ++i){
+		data[i].pt.lon = lon[i];
+		data[i].pt.lat = lat[i];
+		data[i].w = w[i];
+		data[i].z = z[i];
 	}
 	return data;
 }
@@ -304,4 +319,84 @@ void interpolatestress::interpolate_azimuth_plunges_gauss(
 	                         pl1_std_g, pl2_g, pl2_std_g, r_g,
 	                         critical_azi_std, Nmin, failure_policy, a, f,
 	                         GaussianKernel{kernel_bandwidth});
+}
+
+
+/*
+ * Basic setup for interpolating a scalar:
+ */
+namespace interpolatestress {
+
+template<typename kernel_t>
+void interpolate_scalar_base(size_t N, const double* lon, const double* lat,
+                         const double* z, const double* w,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         const double* r_g, double* z_g, double* z_std_g,
+                         size_t Nmin, double a, double f, kernel_t&& kernel)
+{
+	typedef data_scalar_t data_t;
+
+	/* Initialize the data and vantage tree: */
+	std::vector<data_t> data(fill_data_scalar(N, lon, lat, z, w));
+	VantageTree<data_t> tree(data, a, f);
+
+	/* Initialize the grid points: */
+	std::vector<std::pair<point_t,double>> grid(Ng);
+	for (size_t i=0; i<Ng; ++i){
+		grid[i].first.lon = lon_g[i];
+		grid[i].first.lat = lat_g[i];
+		grid[i].second = r_g[i];
+	}
+
+	/* Interpolate: */
+	std::vector<typename data_t::result_t>
+	   result(interpolate(data, grid, tree, Nmin, kernel));
+
+	/* Transfer results: */
+	for (size_t i=0; i<Ng; ++i){
+		z_g[i] = result[i].z;
+	}
+	for (size_t i=0; i<Ng; ++i){
+		z_std_g[i] = result[i].z_std;
+	}
+}
+
+}
+
+
+void interpolatestress::interpolate_scalar_uniform(
+                         size_t N, const double* lon, const double* lat,
+                         const double* z, const double* w,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         const double* r_g, double* z_g, double* z_std_g,
+                         size_t Nmin, double a, double f)
+{
+	interpolate_scalar_base(N, lon, lat, z, w, Ng, lon_g, lat_g, r_g, z_g,
+	                        z_std_g, Nmin, a, f, UniformKernel{});
+}
+
+
+void interpolatestress::interpolate_scalar_linear(
+                         size_t N, const double* lon, const double* lat,
+                         const double* z, const double* w,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         const double* r_g, double* z_g, double* z_std_g,
+                         size_t Nmin, double a, double f)
+{
+	interpolate_scalar_base(N, lon, lat, z, w, Ng, lon_g, lat_g, r_g, z_g,
+	                        z_std_g, Nmin, a, f, LinearKernel{});
+}
+
+
+void interpolatestress::interpolate_scalar_gauss(
+                         size_t N, const double* lon, const double* lat,
+                         const double* z, const double* w,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         const double* r_g, double* z_g, double* z_std_g,
+                         size_t Nmin, double kernel_bandwidth, double a,
+                         double f)
+{
+	interpolate_scalar_base(N, lon, lat, z, w, Ng, lon_g, lat_g, r_g, z_g,
+	                        z_std_g, Nmin,a, f,
+	                        GaussianKernel{kernel_bandwidth});
 }
