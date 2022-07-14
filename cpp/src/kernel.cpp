@@ -39,10 +39,10 @@ double LinearKernel::operator()(double dist, double r) const
 }
 
 
-GaussianKernel::GaussianKernel(double bandwidth)
-   : ibw2(1.0/(bandwidth*bandwidth))
+GaussianKernel::GaussianKernel(double relative_bandwidth)
+   : irbw2(1.0/(relative_bandwidth*relative_bandwidth))
 {
-	if (bandwidth <= 0){
+	if (relative_bandwidth <= 0){
 		throw std::runtime_error("Negative or zero bandwidth not allowed for "
 		                         "GaussianKernel.");
 	}
@@ -50,5 +50,7 @@ GaussianKernel::GaussianKernel(double bandwidth)
 
 double GaussianKernel::operator()(double dist, double r) const
 {
-	return std::exp(-0.5 * dist * dist * ibw2);
+	/* Use relative distance: */
+	double rd = dist / r;
+	return std::exp(-0.5 * rd * rd * irbw2);
 }

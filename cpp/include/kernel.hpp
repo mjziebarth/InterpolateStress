@@ -46,12 +46,12 @@ private:
 
 class GaussianKernel {
 public:
-	GaussianKernel(double bandwidth);
+	GaussianKernel(double relative_bandwidth);
 
 	double operator()(double d, double r) const;
 
 private:
-	double ibw2;
+	double irbw2;
 
 };
 

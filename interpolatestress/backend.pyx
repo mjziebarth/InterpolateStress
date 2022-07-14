@@ -163,7 +163,7 @@ def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
         raise RuntimeError("`failure_policy` must be one of 'nan' or "
                            "'smallest'.")
 
-    cdef double kernel_bandwidth
+    cdef double kernel_relative_bandwidth
     if isinstance(kernel, UniformKernel):
         with nogil:
             interpolate_azimuth_uniform(N, &lon[0], &lat[0], &azi[0],
@@ -173,14 +173,14 @@ def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
                                         critical_azi_std, Nmin,
                                         failure_policy_cpp, a, f)
     elif isinstance(kernel, GaussianKernel):
-        kernel_bandwidth = kernel._bandwidth
+        kernel_relative_bandwidth = kernel._relative_bandwidth
         with nogil:
             interpolate_azimuth_gauss(N, &lon[0], &lat[0], &azi[0], &weight[0],
                                       Nr, &search_radii[0],
                                       Ng, &lon_g[0], &lat_g[0], &azi_g[0],
                                       &azi_std_g[0], &r_g[0], critical_azi_std,
                                       Nmin, failure_policy_cpp,
-                                      kernel_bandwidth, a, f)
+                                      kernel_relative_bandwidth, a, f)
     elif isinstance(kernel, LinearKernel):
         with nogil:
             interpolate_azimuth_linear(N, &lon[0], &lat[0], &azi[0], &weight[0],

@@ -35,5 +35,5 @@ class GaussianKernel:
     """
     A Gaussian kernel.
     """
-    def __init__(self, bandwidth):
-        self._bandwidth = float(bandwidth)
+    def __init__(self, relative_bandwidth = 3.0):
+        self._relative_bandwidth = float(relative_bandwidth)
