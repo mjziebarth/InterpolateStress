@@ -17,5 +17,5 @@
 # See the Licence for the specific language governing permissions and
 # limitations under the Licence.
 
-from .backend import interpolate_azimuth
+from .backend import interpolate_azimuth, interpolate_azimuth_plunges
 from .kernel import UniformKernel, LinearKernel, GaussianKernel

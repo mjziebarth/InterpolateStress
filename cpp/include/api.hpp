@@ -41,6 +41,18 @@ void interpolate_azimuth_uniform(size_t N, const double* lon, const double* lat,
                                  unsigned char failure_policy,
                                  double a, double f);
 
+void interpolate_azimuth_plunges_uniform(
+                         size_t N, const double* lon, const double* lat,
+                         const double* azi, const double* plunge1,
+                         const double* plunge2, const double* w,
+                         size_t Nr, const double* r,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         double* azi_g, double* azi_std_g, double* pl1_g,
+                         double* pl1_std_g, double* pl2_g, double* pl2_std_g,
+                         double* r_g, double critical_azi_std, size_t Nmin,
+                         unsigned char failure_policy,
+                         double a, double f);
+
 
 /*
  * Linear kernel.
@@ -54,6 +66,18 @@ void interpolate_azimuth_linear(size_t N, const double* lon, const double* lat,
                                 double critical_azi_std, size_t Nmin,
                                 unsigned char failure_policy,
                                 double a, double f);
+
+void interpolate_azimuth_plunges_linear(
+                         size_t N, const double* lon, const double* lat,
+                         const double* azi, const double* plunge1,
+                         const double* plunge2, const double* w,
+                         size_t Nr, const double* r,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         double* azi_g, double* azi_std_g, double* pl1_g,
+                         double* pl1_std_g, double* pl2_g, double* pl2_std_g,
+                         double* r_g, double critical_azi_std, size_t Nmin,
+                         unsigned char failure_policy,
+                         double a, double f);
 
 
 /*
@@ -70,6 +94,17 @@ void interpolate_azimuth_gauss(size_t N, const double* lon, const double* lat,
                                double kernel_bandwidth,
                                double a, double f);
 
+void interpolate_azimuth_plunges_gauss(
+                         size_t N, const double* lon, const double* lat,
+                         const double* azi, const double* plunge1,
+                         const double* plunge2, const double* w,
+                         size_t Nr, const double* r,
+                         size_t Ng, const double* lon_g, const double* lat_g,
+                         double* azi_g, double* azi_std_g, double* pl1_g,
+                         double* pl1_std_g, double* pl2_g, double* pl2_std_g,
+                         double* r_g, double critical_azi_std, size_t Nmin,
+                         unsigned char failure_policy,
+                         double kernel_bandwidth, double a, double f);
 
 
 }
