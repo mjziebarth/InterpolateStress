@@ -45,12 +45,23 @@ cdef extern from "api.hpp" namespace "interpolatestress" nogil:
              unsigned char failure_policy, double kernel_bandwidth,
              double a, double f) except+
 
+    void interpolate_azimuth_plunges_gauss(
+             size_t N, const double* lon, const double* lat, const double* azi,
+             const double* plunge1, const double* plunge2, const double* w,
+             size_t Nr, const double* r, size_t Ng, const double* lon_g,
+             const double* lat_g, double* azi_g, double* azi_std_g,
+             double* pl1_g, double* pl1_std_g, double* pl2_g, double* pl2_std_g,
+             double* r_g, double critical_azi_std, size_t Nmin,
+             unsigned char failure_policy, double kernel_bandwidth, double a,
+             double f) except+
 
+cimport cython
 import numpy as np
 from .kernel import UniformKernel, GaussianKernel, LinearKernel
 
 
 
+@cython.boundscheck(False)
 def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
                         const double[::1] azi, const double[::1] weight,
                         const double[::1] search_radii,
@@ -132,7 +143,16 @@ def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
     cdef double[::1] azi_std_g = np.empty(Ng)
     cdef double[::1] r_g = np.empty(Ng)
 
+    # Early exit:
+    if Ng == 0:
+        return azi_g.base, azi_std_g.base, r_g.base
+
+    if N == 0:
+        raise RuntimeError("No data given.")
+
     cdef size_t Nr = search_radii.size
+    if Nr == 0:
+        raise RuntimeError("No search radius given.")
 
     cdef unsigned char failure_policy_cpp
     if failure_policy == "nan":
