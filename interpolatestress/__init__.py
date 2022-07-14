@@ -20,3 +20,5 @@
 from .backend import interpolate_azimuth, interpolate_azimuth_plunges,\
                      interpolate_scalar
 from .kernel import UniformKernel, LinearKernel, GaussianKernel
+from .table import StressTable
+from .stress import StressTensor

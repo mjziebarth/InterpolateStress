@@ -1,4 +1,4 @@
-# Setup script.
+# Data submodule init file.
 #
 # Author: Malte J. Ziebarth (mjz.science@fmvkb.de)
 #
@@ -17,18 +17,6 @@
 # See the Licence for the specific language governing permissions and
 # limitations under the Licence.
 
-from setuptools import setup, Extension
-from mebuex import MesonExtension, build_ext
-
-backend = MesonExtension('interpolatestress.backend')
-
-
-setup(name='interpolatestress',
-      version='0.1.0',
-      author='Malte J. Ziebarth',
-      description='Interpolate principal stress directions based on the method '
-                  '`Stress2Grid` by Ziegler & Heidbach (2017)',
-      packages = ['interpolatestress','interpolatestress.data'],
-      ext_modules=[backend],
-      cmdclass={'build_ext' : build_ext}
-      )
+from .bird2002 import load_plates_bird2002
+from .heidbach2016 import load_wsm_2016
+from .geojson import load_geojson_polygons

@@ -1,4 +1,4 @@
-# Setup script.
+# Ellipsoid definitions.
 #
 # Author: Malte J. Ziebarth (mjz.science@fmvkb.de)
 #
@@ -17,18 +17,10 @@
 # See the Licence for the specific language governing permissions and
 # limitations under the Licence.
 
-from setuptools import setup, Extension
-from mebuex import MesonExtension, build_ext
-
-backend = MesonExtension('interpolatestress.backend')
-
-
-setup(name='interpolatestress',
-      version='0.1.0',
-      author='Malte J. Ziebarth',
-      description='Interpolate principal stress directions based on the method '
-                  '`Stress2Grid` by Ziegler & Heidbach (2017)',
-      packages = ['interpolatestress','interpolatestress.data'],
-      ext_modules=[backend],
-      cmdclass={'build_ext' : build_ext}
-      )
+# From
+# National Imagery and Mapping Agency, 2000. Department of Defense World
+#     Geodetic System 1984: Its Definition and Relationships with Local
+#     Geodetic Systems. National Imagery and Mapping Agency Technical Report
+#     8350.2, Third Edition.
+WGS84_a = 6378137.0
+WGS84_f = 1.0 / 298.257223563
