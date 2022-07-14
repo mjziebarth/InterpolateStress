@@ -74,8 +74,8 @@ struct smallest_res_t<data_t,FAIL_SMALLEST_NMIN_R> {
 
 
 
-template<typename data_t, typename exit_condition_t, typename kernel_t,
-         failure_policy failpol>
+template<failure_policy failpol, typename data_t, typename exit_condition_t,
+         typename kernel_t>
 interpolated_t<typename data_t::result_t>
 interpolate_point(const point_t& p,
                   const typename std::vector<data_t>& data,
@@ -194,11 +194,9 @@ interpolate(const std::vector<point_t>& pts,
 	#pragma omp parallel for
 	for (size_t i=0; i<pts.size(); ++i){
 		try {
-			res[i]
-			   = interpolate_point<data_t, exit_condition_t,
-			                       kernel_t, failpol>
-			         (pts[i], data, tree, search_radii, exit_condition,
-			          kernel);
+			res[i] = interpolate_point<failpol>(pts[i], data, tree,
+			                                    search_radii, exit_condition,
+			                                    kernel);
 		} catch (...) {
 			res[i].res.set_nan();
 			res[i].r = std::nan("");
