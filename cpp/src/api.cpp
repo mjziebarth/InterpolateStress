@@ -21,7 +21,6 @@
 
 #include <../include/api.hpp>
 #include <../include/kernel.hpp>
-#include <../include/weighting.hpp>
 #include <../include/interpolate.hpp>
 #include <../include/exitcondition.hpp>
 
@@ -81,8 +80,8 @@ void interpolatestress::interpolate_azimuth_uniform(size_t N, const double* lon,
 	/* Search radii: */
 	std::vector<double> search_radii(r, r+Nr);
 
-	/* Kernel and data weighting: */
-	DataWeighting<data_t,UniformKernel> weighting{UniformKernel()};
+	/* Kernel: */
+	UniformKernel kernel;
 
 	/* Exit condition: */
 	ExitConditionAzimuthStd<data_t> exit_condition(Nmin, critical_azi_std);
@@ -90,11 +89,11 @@ void interpolatestress::interpolate_azimuth_uniform(size_t N, const double* lon,
 	std::vector<interp_t> result(0);
 	if (failure_policy == FAILURE_POLICY_NAN)
 		result = interpolate<FAIL_NAN>(grid, data, tree, search_radii,
-		                               exit_condition, weighting);
+		                               exit_condition, kernel);
 	else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
 		result = interpolate<FAIL_SMALLEST_NMIN_R>(grid, data, tree,
 		                                           search_radii, exit_condition,
-		                                           weighting);
+		                                           kernel);
 
 	/* Transfer results: */
 	for (size_t i=0; i<Ng; ++i){
@@ -132,9 +131,8 @@ void interpolatestress::interpolate_azimuth_gauss(size_t N, const double* lon,
 	/* Search radii: */
 	std::vector<double> search_radii(r, r+Nr);
 
-	/* Kernel and data weighting: */
-	DataWeighting<data_t,GaussianKernel>
-	   weighting{GaussianKernel(kernel_bandwidth, a, f)};
+	/* Kernel: */
+	GaussianKernel kernel{kernel_bandwidth};
 
 	/* Exit condition: */
 	ExitConditionAzimuthStd<data_t> exit_condition(Nmin, critical_azi_std);
@@ -142,11 +140,11 @@ void interpolatestress::interpolate_azimuth_gauss(size_t N, const double* lon,
 	std::vector<interp_t> result(0);
 	if (failure_policy == FAILURE_POLICY_NAN)
 		result = interpolate<FAIL_NAN>(grid, data, tree, search_radii,
-		                               exit_condition, weighting);
+		                               exit_condition, kernel);
 	else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
 		result = interpolate<FAIL_SMALLEST_NMIN_R>(grid, data, tree,
 		                                           search_radii, exit_condition,
-		                                           weighting);
+		                                           kernel);
 
 	/* Transfer results: */
 	for (size_t i=0; i<Ng; ++i){

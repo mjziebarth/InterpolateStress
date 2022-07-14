@@ -74,7 +74,7 @@ struct smallest_res_t<data_t,FAIL_SMALLEST_NMIN_R> {
 
 
 
-template<typename data_t, typename exit_condition_t, typename data_weighting_t,
+template<typename data_t, typename exit_condition_t, typename kernel_t,
          failure_policy failpol>
 interpolated_t<typename data_t::result_t>
 interpolate_point(const point_t& p,
@@ -82,25 +82,15 @@ interpolate_point(const point_t& p,
                   const VantageTree<data_t>& tree,
                   const std::vector<double>& search_radii,
                   const exit_condition_t& exit_condition,
-                  const data_weighting_t& data_weighting
+                  const kernel_t& kernel
                  )
 {
 	/* Determine all points within the longest radius: */
 	std::vector<int> largest_neighbor_set(tree.within_range(p,search_radii[0],
 	                                                        data));
+	const size_t jmax = largest_neighbor_set.size();
 
-	/* Compute the weights: */
-	std::vector<std::pair<double,data_t>> w_d_lns(largest_neighbor_set.size());
-	{
-		auto it = w_d_lns.begin();
-		for (int i : largest_neighbor_set){
-			it->first = data_weighting(p, i, data);
-			it->second = data[i];
-			++it;
-		}
-	}
-
-	/* Order by distance: */
+	/* Compute the distances */
 	struct ri_t {
 		double r;
 		size_t j;
@@ -108,11 +98,13 @@ interpolate_point(const point_t& p,
 			return r < other.r;
 		};
 	};
-	std::vector<ri_t> distance_ordered(w_d_lns.size());
-	for (size_t j=0; j<largest_neighbor_set.size(); ++j){
+	std::vector<ri_t> distance_ordered(jmax);
+	for (size_t j=0; j<jmax; ++j){
 		int i = largest_neighbor_set[j];
 		distance_ordered[j] = {.r=tree.distance(p, data[i].pt), .j=j};
 	}
+
+	/* Order by distance: */
 	std::sort(distance_ordered.begin(), distance_ordered.end());
 
 	typedef typename data_t::result_t result_t;
@@ -141,7 +133,9 @@ interpolate_point(const point_t& p,
 		std::vector<std::pair<double,data_t>> w_d(M);
 		auto itw = w_d.begin();
 		for (auto it = distance_ordered.begin(); it != end; ++it){
-			*itw = w_d_lns[it->j];
+			int i = largest_neighbor_set[it->j];
+			itw->first = kernel(it->r, r) * data[i].w;
+			itw->second = data[i];
 			++itw;
 		}
 
@@ -183,14 +177,14 @@ void sanity_check_radii(const std::vector<double>& search_radii);
 
 
 template<failure_policy failpol, typename data_t, typename exit_condition_t,
-         typename data_weighting_t>
+         typename kernel_t>
 std::vector<interpolated_t<typename data_t::result_t>>
 interpolate(const std::vector<point_t>& pts,
             const typename std::vector<data_t>& data,
             const VantageTree<data_t>& tree,
             const std::vector<double>& search_radii,
             const exit_condition_t& exit_condition,
-            const data_weighting_t& data_weighting
+            const kernel_t& kernel
            )
 {
 	/* Assert that the radii are descending: */
@@ -202,9 +196,9 @@ interpolate(const std::vector<point_t>& pts,
 		try {
 			res[i]
 			   = interpolate_point<data_t, exit_condition_t,
-			                       data_weighting_t, failpol>
+			                       kernel_t, failpol>
 			         (pts[i], data, tree, search_radii, exit_condition,
-			          data_weighting);
+			          kernel);
 		} catch (...) {
 			res[i].res.set_nan();
 			res[i].r = std::nan("");

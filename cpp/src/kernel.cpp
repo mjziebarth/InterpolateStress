@@ -20,6 +20,7 @@
  */
 
 #include <../include/kernel.hpp>
+#include <cmath>
 #include <stdexcept>
 
 using interpolatestress::UniformKernel;
@@ -29,8 +30,8 @@ UniformKernel::UniformKernel() noexcept {
 }
 
 
-GaussianKernel::GaussianKernel(double bandwidth, double a, double f)
-   : ibw2(1.0/(bandwidth*bandwidth)), geod(a,f)
+GaussianKernel::GaussianKernel(double bandwidth)
+   : ibw2(1.0/(bandwidth*bandwidth))
 {
 	if (bandwidth <= 0){
 		throw std::runtime_error("Negative or zero bandwidth not allowed for "
@@ -38,9 +39,7 @@ GaussianKernel::GaussianKernel(double bandwidth, double a, double f)
 	}
 }
 
-double GaussianKernel::operator()(const point_t& p0, const point_t& p1) const
+double GaussianKernel::operator()(double dist, double r) const
 {
-	double dist = 0.0;
-	geod.Inverse(p0.lat, p0.lon, p1.lat, p1.lon, dist);
 	return std::exp(-0.5 * dist * dist * ibw2);
 }

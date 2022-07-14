@@ -20,7 +20,6 @@
  */
 
 #include <data.hpp>
-#include <GeographicLib/Geodesic.hpp>
 
 #ifndef INTERPOLATE_STRESS_KERNEL_HPP
 #define INTERPOLATE_STRESS_KERNEL_HPP
@@ -31,7 +30,7 @@ class UniformKernel {
 public:
 	UniformKernel() noexcept;
 
-	constexpr double operator()(const point_t& p0, const point_t& p1) const
+	constexpr double operator()(double d, double r) const
 	{
 		return 1.0;
 	};
@@ -39,13 +38,12 @@ public:
 
 class GaussianKernel {
 public:
-	GaussianKernel(double bandwidth, double a, double f);
+	GaussianKernel(double bandwidth);
 
-	double operator()(const point_t& p0, const point_t& p1) const;
+	double operator()(double d, double r) const;
 
 private:
 	double ibw2;
-	GeographicLib::Geodesic geod;
 
 };
 
