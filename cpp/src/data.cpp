@@ -50,12 +50,15 @@ void data_azi_2plunge_t::result_t::set_nan() {
  * Static common routines:
  */
 
-static inline double compute_mean(const double C, const double S)
+static inline double compute_mean(const double S, const double C)
 {
-	return std::fmod(90.0/PI*std::atan2(S,C), 180.0);
+	const double mean = std::fmod(90.0/PI*std::atan2(S,C), 180.0);
+	if (mean < 0)
+		return mean + 180.0;
+	return mean;
 }
 
-static inline double compute_std(const double C, const double S)
+static inline double compute_std(const double S, const double C)
 {
 	return 90.0/PI * std::sqrt(-std::log(C*C + S*S));
 }
