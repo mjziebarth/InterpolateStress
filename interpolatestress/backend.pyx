@@ -70,7 +70,8 @@ def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
                         str failure_policy,
                         kernel, double a, double f):
     """
-    Interpolate the stress tensor.
+    Interpolate the azimuth of the largest horizontal principal
+    axis SHmax of the stress tensor.
 
     Call signature:
        interpolate_azimuth(lon, lat, azi, weight, search_radii,
@@ -117,7 +118,7 @@ def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
 
        azi_g     : Mean azimuth evaluated at the (flattened) grid points.
                    Shape (Ng,)
-       azi_std_g : Standard deviation of azimuth evalauted at the grid points.
+       azi_std_g : Standard deviation of azimuth evaluated at the grid points.
                    Shape (Ng,)
        r_g       : Search radii at the grid points.
                    Shape (Ng,)
