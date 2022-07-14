@@ -36,6 +36,14 @@ public:
 	};
 };
 
+class LinearKernel {
+public:
+	LinearKernel() noexcept;
+
+	double operator()(double d, double r) const;
+private:
+};
+
 class GaussianKernel {
 public:
 	GaussianKernel(double bandwidth);

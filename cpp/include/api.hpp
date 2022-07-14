@@ -43,6 +43,20 @@ void interpolate_azimuth_uniform(size_t N, const double* lon, const double* lat,
 
 
 /*
+ * Linear kernel.
+ */
+void interpolate_azimuth_linear(size_t N, const double* lon, const double* lat,
+                                const double* azi, const double* w,
+                                size_t Nr, const double* r,
+                                size_t Ng, const double* lon_g,
+                                const double* lat_g, double* azi_g,
+                                double* azi_std_g, double* r_g,
+                                double critical_azi_std, size_t Nmin,
+                                unsigned char failure_policy,
+                                double a, double f);
+
+
+/*
  * Gaussian kernel.
  */
 void interpolate_azimuth_gauss(size_t N, const double* lon, const double* lat,

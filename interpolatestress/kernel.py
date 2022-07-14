@@ -24,6 +24,12 @@ class UniformKernel:
     """
     pass
 
+class LinearKernel:
+    """
+    A kernel decreasing linearly along radius.
+    """
+    pass
+
 
 class GaussianKernel:
     """

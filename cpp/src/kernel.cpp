@@ -24,9 +24,18 @@
 #include <stdexcept>
 
 using interpolatestress::UniformKernel;
+using interpolatestress::LinearKernel;
 using interpolatestress::GaussianKernel;
 
 UniformKernel::UniformKernel() noexcept {
+}
+
+LinearKernel::LinearKernel() noexcept {
+}
+
+double LinearKernel::operator()(double dist, double r) const
+{
+	return std::max(1.0 - dist / r, 0.0);
 }
 
 

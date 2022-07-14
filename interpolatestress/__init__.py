@@ -18,4 +18,4 @@
 # limitations under the Licence.
 
 from .backend import interpolate_azimuth
-from .kernel import UniformKernel, GaussianKernel
+from .kernel import UniformKernel, LinearKernel, GaussianKernel
