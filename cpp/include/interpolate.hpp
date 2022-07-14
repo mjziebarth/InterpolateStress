@@ -93,7 +93,7 @@ interpolate_point(const point_t& p,
 	/* Compute the distances */
 	struct ri_t {
 		double r;
-		size_t j;
+		int i;
 		bool operator<(const ri_t& other) const {
 			return r < other.r;
 		};
@@ -101,8 +101,9 @@ interpolate_point(const point_t& p,
 	std::vector<ri_t> distance_ordered(jmax);
 	for (size_t j=0; j<jmax; ++j){
 		int i = largest_neighbor_set[j];
-		distance_ordered[j] = {.r=tree.distance(p, data[i].pt), .j=j};
+		distance_ordered[j] = {.r=tree.distance(p, data[i].pt), .i=i};
 	}
+	largest_neighbor_set.clear();
 
 	/* Order by distance: */
 	std::sort(distance_ordered.begin(), distance_ordered.end());
@@ -112,16 +113,16 @@ interpolate_point(const point_t& p,
 	bool success = false;
 	interpolated_t<result_t> res;
 	smallest_res_t<result_t,failpol> last;
+	auto end = distance_ordered.end();
 	for (double r : search_radii){
 		/* Obtain all data records within range: */
-		const auto end = std::upper_bound(distance_ordered.begin(),
-		                                  distance_ordered.end(),
-		                                  ri_t({.r=r, .j=0}));
+		end = std::upper_bound(distance_ordered.begin(), end,
+		                       ri_t({.r=r, .i=0}));
 		const size_t M = end - distance_ordered.begin();
 		std::vector<int> neighbors(M, 0);
 		auto itn = neighbors.begin();
 		for (auto it = distance_ordered.begin(); it != end; ++it){
-			*itn = largest_neighbor_set[it->j];
+			*itn = it->i;
 			++itn;
 		}
 
@@ -132,10 +133,9 @@ interpolate_point(const point_t& p,
 		/* Compute the weights: */
 		std::vector<std::pair<double,data_t>> w_d(M);
 		auto itw = w_d.begin();
-		for (auto it = distance_ordered.begin(); it != end; ++it){
-			int i = largest_neighbor_set[it->j];
-			itw->first = kernel(it->r, r) * data[i].w;
-			itw->second = data[i];
+		for (auto it = distance_ordered.begin(); it != end; ++it){;
+			itw->first = kernel(it->r, r) * data[it->i].w;
+			itw->second = data[it->i];
 			++itw;
 		}
 
