@@ -224,7 +224,8 @@ void interpolate_azimuth_plunges_base(size_t N, const double* lon,
 	std::vector<double> search_radii(r, r+Nr);
 
 	/* Exit condition: */
-	ExitConditionAzimuthStd<data_t> exit_condition(Nmin, critical_azi_std);
+	ExitConditionAzimuthStdValidData<data_t>
+	    exit_condition(Nmin, critical_azi_std);
 
 	std::vector<interp_t> result(0);
 	if (failure_policy == FAILURE_POLICY_NAN)

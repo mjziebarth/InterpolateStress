@@ -48,6 +48,52 @@ public:
 		return n >= nmin;
 	};
 
+	template<typename index_iter>
+	bool data_ok(index_iter begin, index_iter end,
+	             const std::vector<data_t>& data) const
+	{
+		return true;
+	}
+
+	bool accept(typename data_t::result_t& res) const
+	{
+		return res.azi_std <= critical_std;
+	};
+
+private:
+	const size_t nmin;
+	const double critical_std;
+};
+
+/*
+ * Exit condition that accepts a data set if the standard deviation of the
+ * azimuths is below a threshold and if there are enough all-valid data.
+ */
+
+template<typename data_t>
+class ExitConditionAzimuthStdValidData {
+public:
+	ExitConditionAzimuthStdValidData(size_t nmin, double critical_std)
+	   : nmin(nmin), critical_std(critical_std)
+	{};
+
+	bool size_ok(size_t n) const
+	{
+		return n >= nmin;
+	};
+
+	template<typename index_iter>
+	bool data_ok(index_iter begin, index_iter end,
+	             const std::vector<data_t>& data) const
+	{
+		size_t ok = 0;
+		for (; begin != end; ++begin){
+			if (!data[*begin].any_nan())
+				++ok;
+		}
+		return ok >= nmin;
+	}
+
 	bool accept(typename data_t::result_t& res) const
 	{
 		return res.azi_std <= critical_std;

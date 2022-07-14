@@ -127,7 +127,8 @@ interpolate_point(const point_t& p,
 		}
 
 		/* Check minimum size: */
-		if (!exit_condition.size_ok(M))
+		if (!exit_condition.size_ok(M) ||
+		    !exit_condition.data_ok(neighbors.cbegin(), neighbors.cend(), data))
 			continue;
 
 		/* Compute the weights: */

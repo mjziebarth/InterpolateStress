@@ -41,6 +41,9 @@ struct data_azi_t {
 	double w = nan;
 	double azi = nan;
 
+	/* Query: */
+	bool any_nan() const;
+
 	/* Return type of the stress interpolation: */
 	struct result_t {
 		double azi = nan;
@@ -59,6 +62,9 @@ struct data_azi_2plunge_t {
 	double azi = nan;
 	double plunge1 = nan;
 	double plunge2 = nan;
+
+	/* Query: */
+	bool any_nan() const;
 
 	/* Return type of the stress interpolation: */
 	struct result_t {
@@ -86,6 +92,9 @@ struct data_scalar_t {
 	point_t pt;
 	double w = nan;
 	double z = nan;
+
+	/* Query: */
+	bool any_nan() const;
 
 	/* Return type of an interpolation: */
 	struct result_t {

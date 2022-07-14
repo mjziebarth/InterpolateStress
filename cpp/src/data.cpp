@@ -50,6 +50,20 @@ void data_scalar_t::result_t::set_nan() {
 	z_std = nan;
 };
 
+/*
+ * Query routines:
+ */
+bool data_azi_t::any_nan() const {
+	return std::isnan(azi);
+}
+
+bool data_azi_2plunge_t::any_nan() const {
+	return std::isnan(azi) || std::isnan(plunge1) || std::isnan(plunge2);
+}
+
+bool data_scalar_t::any_nan() const {
+	return std::isnan(z);
+}
 
 /*
  * Static common routines:
@@ -132,6 +146,8 @@ data_azi_2plunge_t::compute_result(
 	res.azi = compute_mean(Sa,Ca);
 	res.azi_std = compute_std(Sa,Ca);
 	if (np1 > 0){
+		Sp1 /= Zp1;
+		Cp1 /= Zp1;
 		res.pl1 = compute_mean(Sp1,Cp1);
 		res.pl1_std = compute_std(Sp1,Cp1);
 	} else {
@@ -139,6 +155,8 @@ data_azi_2plunge_t::compute_result(
 		res.pl1_std = std::nan("");
 	}
 	if (np2 > 0){
+		Sp2 /= Zp2;
+		Cp2 /= Zp2;
 		res.pl2 = compute_mean(Sp2,Cp2);
 		res.pl2_std = compute_std(Sp2,Cp2);
 	} else {
