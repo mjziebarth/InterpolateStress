@@ -23,6 +23,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <constants.hpp>
 
 #ifndef INTERPOLATE_STRESS_DATA_HPP
 #define INTERPOLATE_STRESS_DATA_HPP
@@ -37,13 +38,13 @@ struct point_t {
 struct data_azi_t {
 	/* Data members: */
 	point_t pt;
-	double w;
-	double azi;
+	double w = nan;
+	double azi = nan;
 
 	/* Return type of the stress interpolation: */
 	struct result_t {
-		double azi;
-		double azi_std;
+		double azi = nan;
+		double azi_std = nan;
 
 		void set_nan();
 	};
@@ -54,19 +55,19 @@ struct data_azi_t {
 
 struct data_azi_2plunge_t {
 	point_t pt;
-	double w;
-	double azi;
-	double plunge1;
-	double plunge2;
+	double w = nan;
+	double azi = nan;
+	double plunge1 = nan;
+	double plunge2 = nan;
 
 	/* Return type of the stress interpolation: */
 	struct result_t {
-		double azi;
-		double azi_std;
-		double pl1;
-		double pl1_std;
-		double pl2;
-		double pl2_std;
+		double azi = nan;
+		double azi_std = nan;
+		double pl1 = nan;
+		double pl1_std = nan;
+		double pl2 = nan;
+		double pl2_std = nan;
 
 		void set_nan();
 	};

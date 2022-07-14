@@ -19,12 +19,15 @@
  * limitations under the Licence.
  */
 
+#include <limits>
+
 #ifndef INTERPOLATE_STRESS_CONSTANTS_HPP
 #define INTERPOLATE_STRESS_CONSTANTS_HPP
 
 namespace interpolatestress {
 
 constexpr double PI = 3.1415926535897932385;
+constexpr static double nan = std::numeric_limits<double>::quiet_NaN();
 
 };
 
