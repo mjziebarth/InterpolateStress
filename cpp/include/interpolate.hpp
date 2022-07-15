@@ -77,13 +77,12 @@ struct smallest_res_t<data_t,FAIL_SMALLEST_NMIN_R> {
 template<failure_policy failpol, typename data_t, typename exit_condition_t,
          typename kernel_t>
 interpolated_t<typename data_t::result_t>
-interpolate_point(const point_t& p,
-                  const typename std::vector<data_t>& data,
-                  const VantageTree<data_t>& tree,
-                  const std::vector<double>& search_radii,
-                  const exit_condition_t& exit_condition,
-                  const kernel_t& kernel
-                 )
+search_radius_point(const point_t& p,
+                    const typename std::vector<data_t>& data,
+                    const VantageTree<data_t>& tree,
+                    const std::vector<double>& search_radii,
+                    const exit_condition_t& exit_condition,
+                    const kernel_t& kernel)
 {
 	/* Determine all points within the longest radius: */
 	std::vector<int> largest_neighbor_set(tree.within_range(p,search_radii[0],
@@ -180,13 +179,12 @@ void sanity_check_radii(const std::vector<double>& search_radii);
 template<failure_policy failpol, typename data_t, typename exit_condition_t,
          typename kernel_t>
 std::vector<interpolated_t<typename data_t::result_t>>
-interpolate(const std::vector<point_t>& pts,
-            const typename std::vector<data_t>& data,
-            const VantageTree<data_t>& tree,
-            const std::vector<double>& search_radii,
-            const exit_condition_t& exit_condition,
-            const kernel_t& kernel
-           )
+search_radius_interpolate(const std::vector<point_t>& pts,
+                          const typename std::vector<data_t>& data,
+                          const VantageTree<data_t>& tree,
+                          const std::vector<double>& search_radii,
+                          const exit_condition_t& exit_condition,
+                          const kernel_t& kernel)
 {
 	/* Assert that the radii are descending: */
 	sanity_check_radii(search_radii);
@@ -195,9 +193,9 @@ interpolate(const std::vector<point_t>& pts,
 	#pragma omp parallel for
 	for (size_t i=0; i<pts.size(); ++i){
 		try {
-			res[i] = interpolate_point<failpol>(pts[i], data, tree,
-			                                    search_radii, exit_condition,
-			                                    kernel);
+			res[i] = search_radius_point<failpol>(pts[i], data, tree,
+			                                      search_radii, exit_condition,
+			                                      kernel);
 		} catch (...) {
 			res[i].res.set_nan();
 			res[i].r = std::nan("");
