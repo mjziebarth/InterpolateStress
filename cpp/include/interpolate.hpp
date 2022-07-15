@@ -181,13 +181,15 @@ template<failure_policy failpol, typename data_t, typename exit_condition_t,
 std::vector<interpolated_t<typename data_t::result_t>>
 search_radius_interpolate(const std::vector<point_t>& pts,
                           const typename std::vector<data_t>& data,
-                          const VantageTree<data_t>& tree,
                           const std::vector<double>& search_radii,
                           const exit_condition_t& exit_condition,
-                          const kernel_t& kernel)
+                          const kernel_t& kernel, double a, double f)
 {
 	/* Assert that the radii are descending: */
 	sanity_check_radii(search_radii);
+
+	/* Initialize the vantage tree: */
+	VantageTree<data_t> tree(data,a,f);
 
 	std::vector<interpolated_t<typename data_t::result_t>> res(pts.size());
 	#pragma omp parallel for

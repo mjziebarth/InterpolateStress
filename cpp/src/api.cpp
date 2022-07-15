@@ -108,7 +108,6 @@ void interpolate_azimuth_base(size_t N, const double* lon, const double* lat,
 
 	/* Initialize the data and vantage tree: */
 	std::vector<data_t> data(fill_data_azi(N, lon, lat, azi, w));
-	VantageTree<data_t> tree(data, a, f);
 
 	/* Initialize the grid points: */
 	std::vector<point_t> grid(fill_points(Ng, lon_g, lat_g));
@@ -121,13 +120,13 @@ void interpolate_azimuth_base(size_t N, const double* lon, const double* lat,
 
 	std::vector<interp_t> result(0);
 	if (failure_policy == FAILURE_POLICY_NAN)
-		result = search_radius_interpolate<FAIL_NAN>(grid, data, tree,
-		                                             search_radii,
-		                                             exit_condition, kernel);
+		result = search_radius_interpolate<FAIL_NAN>(grid, data, search_radii,
+		                                             exit_condition, kernel,
+		                                             a, f);
 	else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
 		result = search_radius_interpolate<FAIL_SMALLEST_NMIN_R>(grid, data,
-		                                           tree, search_radii,
-		                                           exit_condition, kernel);
+		                                           search_radii, exit_condition,
+		                                           kernel, a, f);
 
 	/* Transfer results: */
 	for (size_t i=0; i<Ng; ++i){
@@ -216,7 +215,6 @@ void interpolate_azimuth_plunges_base(size_t N, const double* lon,
 	/* Initialize the data and vantage tree: */
 	std::vector<data_t> data(fill_data_azi_plunges(N, lon, lat, azi, pl1,
 	                                               pl2, w));
-	VantageTree<data_t> tree(data, a, f);
 
 	/* Initialize the grid points: */
 	std::vector<point_t> grid(fill_points(Ng, lon_g, lat_g));
@@ -230,12 +228,12 @@ void interpolate_azimuth_plunges_base(size_t N, const double* lon,
 
 	std::vector<interp_t> result(0);
 	if (failure_policy == FAILURE_POLICY_NAN)
-		result = search_radius_interpolate<FAIL_NAN>(grid, data, tree,
-		                               search_radii, exit_condition, kernel);
+		result = search_radius_interpolate<FAIL_NAN>(grid, data, search_radii,
+		                                          exit_condition, kernel, a, f);
 	else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
 		result = search_radius_interpolate<FAIL_SMALLEST_NMIN_R>(grid, data,
-		                                           tree, search_radii,
-		                                           exit_condition, kernel);
+		                                          search_radii, exit_condition,
+		                                          kernel, a, f);
 
 	/* Transfer results: */
 	for (size_t i=0; i<Ng; ++i){
