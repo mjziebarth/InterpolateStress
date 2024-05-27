@@ -2,7 +2,8 @@
 #
 # Author: Malte J. Ziebarth (mjz.science@fmvkb.de)
 #
-# Copyright (C) 2022 Malte J. Ziebarth
+# Copyright (C) 2022 Malte J. Ziebarth,
+#               2024 Technical University of Munich
 #
 # Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
 # the European Commission - subsequent versions of the EUPL (the "Licence");
@@ -23,23 +24,28 @@
 #     Stress Map Database Release 2016. V. 1.1. GFZ Data Services.
 #     https://doi.org/10.5880/WSM.2016.001.
 
+import csv
 import codecs
 import numpy as np
 from math import nan
 
 def load_wsm_2016(filename):
     """
-    
+
     """
     # Decode the CSV:
-    with codecs.open(filename, 'r', encoding='iso-8859-1') as f:
-        lines = f.readlines()
-
     table = []
     line_lengths = set()
-    for line in lines:
-        table.append(list(str(t).strip() for t in line.split(',')))
-        line_lengths.add(len(table[-1]))
+    with codecs.open(filename, 'r', encoding='iso-8859-1') as f:
+        reader = csv.reader(f)
+        for line in reader:
+            table.append(list(t.strip() for t in line))
+            line_lengths.add(len(table[-1]))
+
+    if len(line_lengths) != 1:
+        raise ValueError("The number of columns is inconsistent. Found rows "
+            "with the following number of columns: " + str(line_lengths)
+        )
 
     # Header with all labels:
     header = [str(t) for t in table[0] if len(t) > 0]
