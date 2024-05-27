@@ -28,6 +28,8 @@ using interpolatestress::point_t;
 using interpolatestress::data_azi_t;
 using interpolatestress::data_azi_2plunge_t;
 using interpolatestress::data_scalar_t;
+using interpolatestress::marked_point_t;
+using interpolatestress::marked_data_t;
 using interpolatestress::FAIL_NAN;
 using interpolatestress::FAIL_SMALLEST_NMIN_R;
 
@@ -39,6 +41,19 @@ fill_points(size_t N, const double* lon, const double* lat)
 	for (size_t i=0; i<N; ++i){
 		pts[i].lon = lon[i];
 		pts[i].lat = lat[i];
+	}
+	return pts;
+}
+
+static std::vector<marked_point_t>
+fill_marked_points(size_t N, const double* lon, const double* lat,
+                   const unsigned short* markers)
+{
+	std::vector<marked_point_t> pts(N);
+	for (size_t i=0; i<N; ++i){
+		pts[i].pt.lon = lon[i];
+		pts[i].pt.lat = lat[i];
+		pts[i].marker = markers[i];
 	}
 	return pts;
 }
@@ -57,6 +72,22 @@ fill_data_azi(size_t N, const double* lon, const double* lat, const double* azi,
 	return data;
 }
 
+static std::vector<marked_data_t<data_azi_t>>
+fill_marked_data_azi(size_t N, const double* lon, const double* lat,
+                     const double* azi, const double* w,
+                     const unsigned short* markers)
+{
+	std::vector<marked_data_t<data_azi_t>> data(N);
+	for (size_t i=0; i<N; ++i){
+		data[i].data.pt.lon = lon[i];
+		data[i].data.pt.lat = lat[i];
+		data[i].data.w = w[i];
+		data[i].data.azi = azi[i];
+		data[i].marker = markers[i];
+	}
+	return data;
+}
+
 static std::vector<data_azi_2plunge_t>
 fill_data_azi_plunges(size_t N, const double* lon, const double* lat,
                       const double* azi, const double* pl1, const double* pl2,
@@ -70,6 +101,25 @@ fill_data_azi_plunges(size_t N, const double* lon, const double* lat,
 		data[i].azi = azi[i];
 		data[i].plunge1 = pl1[i];
 		data[i].plunge2 = pl2[i];
+	}
+	return data;
+}
+
+static std::vector<marked_data_t<data_azi_2plunge_t>>
+fill_marked_data_azi_plunges(size_t N, const double* lon, const double* lat,
+                             const double* azi, const double* pl1,
+                             const double* pl2, const double* w,
+                             const unsigned short* markers)
+{
+	std::vector<marked_data_t<data_azi_2plunge_t>> data(N);
+	for (size_t i=0; i<N; ++i){
+		data[i].data.pt.lon = lon[i];
+		data[i].data.pt.lat = lat[i];
+		data[i].data.w = w[i];
+		data[i].data.azi = azi[i];
+		data[i].data.plunge1 = pl1[i];
+		data[i].data.plunge2 = pl2[i];
+		data[i].marker = markers[i];
 	}
 	return data;
 }
@@ -96,8 +146,10 @@ namespace interpolatestress {
 template<typename kernel_t>
 void interpolate_azimuth_base(size_t N, const double* lon, const double* lat,
                          const double* azi, const double* w,
+                         const unsigned short* markers,
                          size_t Nr, const double* r,
                          size_t Ng, const double* lon_g, const double* lat_g,
+                         const unsigned short* markers_g,
                          double* azi_g, double* azi_std_g, double* r_g,
                          double critical_azi_std, size_t Nmin,
                          unsigned char failure_policy,
@@ -106,12 +158,6 @@ void interpolate_azimuth_base(size_t N, const double* lon, const double* lat,
 	typedef data_azi_t data_t;
 	typedef interpolated_t<typename data_t::result_t> interp_t;
 
-	/* Initialize the data and vantage tree: */
-	std::vector<data_t> data(fill_data_azi(N, lon, lat, azi, w));
-
-	/* Initialize the grid points: */
-	std::vector<point_t> grid(fill_points(Ng, lon_g, lat_g));
-
 	/* Search radii: */
 	std::vector<double> search_radii(r, r+Nr);
 
@@ -119,14 +165,47 @@ void interpolate_azimuth_base(size_t N, const double* lon, const double* lat,
 	ExitConditionAzimuthStd<data_t> exit_condition(Nmin, critical_azi_std);
 
 	std::vector<interp_t> result(0);
-	if (failure_policy == FAILURE_POLICY_NAN)
-		result = search_radius_interpolate<FAIL_NAN>(grid, data, search_radii,
-		                                             exit_condition, kernel,
-		                                             a, f);
-	else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
-		result = search_radius_interpolate<FAIL_SMALLEST_NMIN_R>(grid, data,
-		                                           search_radii, exit_condition,
-		                                           kernel, a, f);
+	if (markers_g){
+		if (!markers)
+			throw std::runtime_error("If markers are given on the grid, the "
+			                         "data need to be marked as well.");
+
+		/* Initialize the data and vantage tree: */
+		std::vector<marked_data_t<data_t>>
+		    data(fill_marked_data_azi(N, lon, lat, azi, w, markers));
+
+		/* Initialize the grid points: */
+		std::vector<marked_point_t> grid(fill_marked_points(Ng, lon_g, lat_g,
+		                                                    markers_g));
+
+		/* Call depending on failure policy: */
+		if (failure_policy == FAILURE_POLICY_NAN)
+			result = search_radius_interpolate_marked<FAIL_NAN>(
+			                grid, data, search_radii, exit_condition, kernel,
+			                a, f);
+		else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
+			result = search_radius_interpolate_marked<FAIL_SMALLEST_NMIN_R>(
+			                grid, data, search_radii, exit_condition, kernel,
+			                a, f);
+	} else {
+		/* Initialize the data and vantage tree: */
+		std::vector<data_t> data(fill_data_azi(N, lon, lat, azi, w));
+
+		/* Initialize the grid points: */
+		std::vector<point_t> grid(fill_points(Ng, lon_g, lat_g));
+
+		/* Call depending on failure policy: */
+		if (failure_policy == FAILURE_POLICY_NAN)
+			result = search_radius_interpolate<FAIL_NAN>(grid, data,
+			                                             search_radii,
+			                                             exit_condition, kernel,
+			                                             a, f);
+		else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
+			result = search_radius_interpolate<FAIL_SMALLEST_NMIN_R>(grid, data,
+			                                           search_radii,
+			                                           exit_condition,
+			                                           kernel, a, f);
+	}
 
 	/* Transfer results: */
 	for (size_t i=0; i<Ng; ++i){
@@ -144,50 +223,56 @@ void interpolate_azimuth_base(size_t N, const double* lon, const double* lat,
 
 
 void interpolatestress::interpolate_azimuth_uniform(size_t N, const double* lon,
-                         const double* lat,
-                         const double* azi, const double* w,
+                         const double* lat, const double* azi, const double* w,
+                         const unsigned short* markers,
                          size_t Nr, const double* r,
                          size_t Ng, const double* lon_g, const double* lat_g,
+                         const unsigned short* markers_g,
                          double* azi_g, double* azi_std_g, double* r_g,
                          double critical_azi_std, size_t Nmin,
                          unsigned char failure_policy,
                          double a, double f)
 {
-	interpolate_azimuth_base(N, lon, lat, azi, w, Nr, r, Ng, lon_g, lat_g,
-	                         azi_g, azi_std_g, r_g, critical_azi_std, Nmin,
-	                         failure_policy, a, f, UniformKernel{});
+	interpolate_azimuth_base(N, lon, lat, azi, w, markers, Nr, r, Ng, lon_g,
+	                         lat_g, markers_g, azi_g, azi_std_g, r_g,
+	                         critical_azi_std, Nmin, failure_policy, a, f,
+	                         UniformKernel{});
 }
 
 
 void interpolatestress::interpolate_azimuth_linear(size_t N, const double* lon,
-                         const double* lat,
-                         const double* azi, const double* w,
+                         const double* lat, const double* azi, const double* w,
+                         const unsigned short* markers,
                          size_t Nr, const double* r,
                          size_t Ng, const double* lon_g, const double* lat_g,
+                         const unsigned short* markers_g,
                          double* azi_g, double* azi_std_g, double* r_g,
                          double critical_azi_std, size_t Nmin,
                          unsigned char failure_policy,
                          double a, double f)
 {
-	interpolate_azimuth_base(N, lon, lat, azi, w, Nr, r, Ng, lon_g, lat_g,
-	                         azi_g, azi_std_g, r_g, critical_azi_std, Nmin,
-	                         failure_policy, a, f, LinearKernel{});
+	interpolate_azimuth_base(N, lon, lat, azi, w, markers, Nr, r, Ng, lon_g,
+	                         lat_g, markers_g, azi_g, azi_std_g, r_g,
+	                         critical_azi_std, Nmin, failure_policy, a, f,
+	                         LinearKernel{});
 }
 
 
 void interpolatestress::interpolate_azimuth_gauss(size_t N, const double* lon,
                          const double* lat,
                          const double* azi, const double* w,
+                         const unsigned short* markers,
                          size_t Nr, const double* r,
                          size_t Ng, const double* lon_g, const double* lat_g,
-                         double* azi_g, double* azi_std_g, double* r_g,
+                         const unsigned short* markers_g, double* azi_g,
+                         double* azi_std_g, double* r_g,
                          double critical_azi_std, size_t Nmin,
                          unsigned char failure_policy,
                          double kernel_bandwidth, double a, double f)
 {
-	interpolate_azimuth_base(N, lon, lat, azi, w, Nr, r, Ng, lon_g, lat_g,
-	                         azi_g, azi_std_g, r_g, critical_azi_std, Nmin,
-	                         failure_policy, a, f,
+	interpolate_azimuth_base(N, lon, lat, azi, w, markers, Nr, r, Ng, lon_g,
+	                         lat_g, markers_g, azi_g, azi_std_g, r_g,
+	                         critical_azi_std, Nmin, failure_policy, a, f,
 	                         GaussianKernel{kernel_bandwidth});
 }
 
@@ -201,8 +286,10 @@ template<typename kernel_t>
 void interpolate_azimuth_plunges_base(size_t N, const double* lon,
                          const double* lat, const double* azi,
                          const double* pl1, const double* pl2, const double* w,
+                         const unsigned short* markers,
                          size_t Nr, const double* r,
                          size_t Ng, const double* lon_g, const double* lat_g,
+                         const unsigned short* markers_g,
                          double* azi_g, double* azi_std_g, double* pl1_g,
                          double* pl1_std_g, double* pl2_g, double* pl2_std_g,
                          double* r_g, double critical_azi_std, size_t Nmin,
@@ -212,13 +299,6 @@ void interpolate_azimuth_plunges_base(size_t N, const double* lon,
 	typedef data_azi_2plunge_t data_t;
 	typedef interpolated_t<typename data_t::result_t> interp_t;
 
-	/* Initialize the data and vantage tree: */
-	std::vector<data_t> data(fill_data_azi_plunges(N, lon, lat, azi, pl1,
-	                                               pl2, w));
-
-	/* Initialize the grid points: */
-	std::vector<point_t> grid(fill_points(Ng, lon_g, lat_g));
-
 	/* Search radii: */
 	std::vector<double> search_radii(r, r+Nr);
 
@@ -227,13 +307,44 @@ void interpolate_azimuth_plunges_base(size_t N, const double* lon,
 	    exit_condition(Nmin, critical_azi_std);
 
 	std::vector<interp_t> result(0);
-	if (failure_policy == FAILURE_POLICY_NAN)
-		result = search_radius_interpolate<FAIL_NAN>(grid, data, search_radii,
-		                                          exit_condition, kernel, a, f);
-	else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
-		result = search_radius_interpolate<FAIL_SMALLEST_NMIN_R>(grid, data,
-		                                          search_radii, exit_condition,
-		                                          kernel, a, f);
+	if (markers_g){
+		/* Initialize the data and vantage tree: */
+		std::vector<marked_data_t<data_t>>
+		   data(fill_marked_data_azi_plunges(N, lon, lat, azi, pl1, pl2, w,
+		                                     markers_g));
+
+		/* Initialize the grid points: */
+		std::vector<marked_point_t> grid(fill_marked_points(Ng, lon_g, lat_g,
+		                                                    markers_g));
+
+		if (failure_policy == FAILURE_POLICY_NAN)
+			result = search_radius_interpolate_marked<FAIL_NAN>(grid, data,
+			                                             search_radii,
+			                                             exit_condition, kernel,
+			                                             a, f);
+		else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
+			result = search_radius_interpolate_marked<FAIL_SMALLEST_NMIN_R>(
+			                                      grid, data, search_radii,
+			                                      exit_condition, kernel, a, f);
+
+	} else {
+		/* Initialize the data and vantage tree: */
+		std::vector<data_t> data(fill_data_azi_plunges(N, lon, lat, azi, pl1,
+		                                               pl2, w));
+
+		/* Initialize the grid points: */
+		std::vector<point_t> grid(fill_points(Ng, lon_g, lat_g));
+
+		if (failure_policy == FAILURE_POLICY_NAN)
+			result = search_radius_interpolate<FAIL_NAN>(grid, data,
+			                                             search_radii,
+			                                             exit_condition, kernel,
+			                                             a, f);
+		else if (failure_policy == FAILURE_POLICY_SMALLEST_R_WITH_NMIN)
+			result = search_radius_interpolate<FAIL_SMALLEST_NMIN_R>(grid, data,
+			                                      search_radii, exit_condition,
+			                                      kernel, a, f);
+	}
 
 	/* Transfer results: */
 	for (size_t i=0; i<Ng; ++i){
@@ -266,8 +377,10 @@ void interpolatestress::interpolate_azimuth_plunges_uniform(
                          size_t N, const double* lon, const double* lat,
                          const double* azi, const double* plunge1,
                          const double* plunge2, const double* w,
+                         const unsigned short* markers,
                          size_t Nr, const double* r,
                          size_t Ng, const double* lon_g, const double* lat_g,
+                         const unsigned short* markers_g,
                          double* azi_g, double* azi_std_g, double* pl1_g,
                          double* pl1_std_g, double* pl2_g, double* pl2_std_g,
                          double* r_g, double critical_azi_std, size_t Nmin,
@@ -275,10 +388,10 @@ void interpolatestress::interpolate_azimuth_plunges_uniform(
                          double a, double f)
 {
 	interpolate_azimuth_plunges_base(N, lon, lat, azi, plunge1, plunge2, w,
-	                         Nr, r, Ng, lon_g, lat_g, azi_g, azi_std_g, pl1_g,
-	                         pl1_std_g, pl2_g, pl2_std_g, r_g,
-	                         critical_azi_std, Nmin, failure_policy, a, f,
-	                         UniformKernel{});
+	                         markers, Nr, r, Ng, lon_g, lat_g, markers_g,
+	                         azi_g, azi_std_g, pl1_g, pl1_std_g, pl2_g,
+	                         pl2_std_g, r_g, critical_azi_std, Nmin,
+	                         failure_policy, a, f, UniformKernel{});
 }
 
 
@@ -286,8 +399,10 @@ void interpolatestress::interpolate_azimuth_plunges_linear(
                          size_t N, const double* lon, const double* lat,
                          const double* azi, const double* plunge1,
                          const double* plunge2, const double* w,
+                         const unsigned short* markers,
                          size_t Nr, const double* r,
                          size_t Ng, const double* lon_g, const double* lat_g,
+                         const unsigned short* markers_g,
                          double* azi_g, double* azi_std_g, double* pl1_g,
                          double* pl1_std_g, double* pl2_g, double* pl2_std_g,
                          double* r_g, double critical_azi_std, size_t Nmin,
@@ -295,10 +410,10 @@ void interpolatestress::interpolate_azimuth_plunges_linear(
                          double a, double f)
 {
 	interpolate_azimuth_plunges_base(N, lon, lat, azi, plunge1, plunge2, w,
-	                         Nr, r, Ng, lon_g, lat_g, azi_g, azi_std_g, pl1_g,
-	                         pl1_std_g, pl2_g, pl2_std_g, r_g,
-	                         critical_azi_std, Nmin, failure_policy, a, f,
-	                         LinearKernel{});
+	                         markers, Nr, r, Ng, lon_g, lat_g, markers_g,
+	                         azi_g, azi_std_g, pl1_g, pl1_std_g, pl2_g,
+	                         pl2_std_g, r_g, critical_azi_std, Nmin,
+	                         failure_policy, a, f, LinearKernel{});
 }
 
 
@@ -306,8 +421,10 @@ void interpolatestress::interpolate_azimuth_plunges_gauss(
                          size_t N, const double* lon, const double* lat,
                          const double* azi, const double* plunge1,
                          const double* plunge2, const double* w,
+                         const unsigned short* markers,
                          size_t Nr, const double* r,
                          size_t Ng, const double* lon_g, const double* lat_g,
+                         const unsigned short* markers_g,
                          double* azi_g, double* azi_std_g, double* pl1_g,
                          double* pl1_std_g, double* pl2_g, double* pl2_std_g,
                          double* r_g, double critical_azi_std, size_t Nmin,
@@ -315,8 +432,8 @@ void interpolatestress::interpolate_azimuth_plunges_gauss(
                          double kernel_bandwidth, double a, double f)
 {
 	interpolate_azimuth_plunges_base(N, lon, lat, azi, plunge1, plunge2, w,
-	                         Nr, r, Ng, lon_g, lat_g, azi_g, azi_std_g, pl1_g,
-	                         pl1_std_g, pl2_g, pl2_std_g, r_g,
+	                         markers, Nr, r, Ng, lon_g, lat_g, markers_g, azi_g,
+	                         azi_std_g, pl1_g, pl1_std_g, pl2_g, pl2_std_g, r_g,
 	                         critical_azi_std, Nmin, failure_policy, a, f,
 	                         GaussianKernel{kernel_bandwidth});
 }

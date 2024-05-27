@@ -35,6 +35,26 @@ struct point_t {
 	double lat;
 };
 
+/*
+ * Marked points and data:
+ */
+
+typedef uint16_t marker_t;
+
+struct marked_point_t {
+	point_t pt;
+	marker_t marker;
+};
+
+template<typename data_t>
+struct marked_data_t {
+	typedef typename data_t::result_t result_t;
+	/* Data member: */
+	data_t data;
+	marker_t marker;
+};
+
+
 struct data_azi_t {
 	/* Data members: */
 	point_t pt;

@@ -171,6 +171,7 @@ class StressTensor:
 
     @staticmethod
     def critical_stress_interpolated(lon, lat, table, mu, Sz,
+                                     marker=None,
                                      search_radii=np.geomspace(1.5e6, 1e2, 200),
                                      kernel=GaussianKernel(), Nmin=10,
                                      Nmin_R=5, critical_azimuth_std=15.0,
@@ -218,12 +219,21 @@ class StressTensor:
         if failure_policy not in ('nan','smallest'):
             raise ValueError("`failure_policy` must be one of 'nan' or "
                              "'smallest'.")
+        if marker is None:
+            data_marker = np.empty((0,), dtype=np.ushort)
+            grid_marker = np.empty((0,), dtype=np.ushort)
+        else:
+            data_marker = np.ascontiguousarray(marker(data_lon, data_lat),
+                                               dtype=np.ushort)
+            grid_marker = np.ascontiguousarray(marker(long, latg),
+                                               dtype=np.ushort)
 
         # Perform the interpolation:
         azi_g, azi_std_g, pl1_g, pl1_std_g, pl2_g, pl2_std_g, r_g \
            = interpolate_azimuth_plunges(data_lon, data_lat, data_azimuth,
                                          data_plunge1, data_plunge2,
-                                         data_weight, search_radii, long, latg,
+                                         data_weight, data_marker, search_radii,
+                                         long, latg, grid_marker,
                                          critical_azimuth_std, Nmin,
                                          failure_policy, kernel, a, f)
 

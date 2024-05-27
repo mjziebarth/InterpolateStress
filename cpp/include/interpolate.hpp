@@ -177,7 +177,7 @@ void sanity_check_radii(const std::vector<double>& search_radii);
 
 
 template<failure_policy failpol, typename data_t, typename exit_condition_t,
-         typename kernel_t>
+         typename kernel_t, bool parallel=true>
 std::vector<interpolated_t<typename data_t::result_t>>
 search_radius_interpolate(const std::vector<point_t>& pts,
                           const typename std::vector<data_t>& data,
@@ -192,19 +192,131 @@ search_radius_interpolate(const std::vector<point_t>& pts,
 	VantageTree<data_t> tree(data,a,f);
 
 	std::vector<interpolated_t<typename data_t::result_t>> res(pts.size());
-	#pragma omp parallel for
-	for (size_t i=0; i<pts.size(); ++i){
-		try {
-			res[i] = search_radius_point<failpol>(pts[i], data, tree,
-			                                      search_radii, exit_condition,
-			                                      kernel);
-		} catch (...) {
-			res[i].res.set_nan();
-			res[i].r = std::nan("");
+	if (parallel){
+		#pragma omp parallel for
+		for (size_t i=0; i<pts.size(); ++i){
+			try {
+				res[i] = search_radius_point<failpol>(pts[i], data, tree,
+				                                      search_radii,
+				                                      exit_condition,
+				                                      kernel);
+			} catch (...) {
+				res[i].res.set_nan();
+				res[i].r = std::nan("");
+			}
+		}
+	} else {
+		for (size_t i=0; i<pts.size(); ++i){
+			try {
+				res[i] = search_radius_point<failpol>(pts[i], data, tree,
+				                                      search_radii,
+				                                      exit_condition,
+				                                      kernel);
+			} catch (...) {
+				res[i].res.set_nan();
+				res[i].r = std::nan("");
+			}
 		}
 	}
 	return res;
 }
+
+
+template<failure_policy failpol, typename data_t, typename exit_condition_t,
+         typename kernel_t, bool parallel=true>
+std::vector<interpolated_t<typename data_t::result_t>>
+search_radius_interpolate_marked(const std::vector<marked_point_t>& pts,
+                          const std::vector<marked_data_t<data_t>>& data,
+                          const std::vector<double>& search_radii,
+                          const exit_condition_t& exit_condition,
+                          const kernel_t& kernel, double a, double f)
+{
+	typedef marked_data_t<data_t> md_t;
+
+	/* Assert that the radii are descending: */
+	sanity_check_radii(search_radii);
+
+	/* Obtain all plate labels in the destination points.
+	 * Use linear search here since the number of markers might typically
+	 * be less than ~10 (plate labels) */
+	struct marker_map_t {
+		marker_t marker;
+		marker_t id;
+
+		/* Compare to a marker: */
+		bool operator==(const marker_t& m) const
+		{
+			return marker == m;
+		}
+	};
+	std::vector<marker_map_t> used_markers;
+	/* In the same run, also bin the points. */
+	std::vector<marker_t> point_bins(pts.size());
+	for (size_t i=0; i<pts.size(); ++i){
+		const marked_point_t& p = pts[i];
+		auto bin = std::find(used_markers.cbegin(), used_markers.cend(),
+		                     p.marker);
+		if (bin == used_markers.cend()){
+			/* Create a new marker: */
+			const marker_t id = static_cast<marker_t>(used_markers.size());
+			used_markers.push_back(marker_map_t({.marker=p.marker, .id=id}));
+		}
+		/* Add the point to its bin: */
+		point_bins[i] = static_cast<marker_t>(bin - used_markers.cbegin());
+	}
+
+	/* Group the data points into those groups: */
+	std::vector<std::vector<data_t>> data_grouped(used_markers.size());
+	for (const md_t& d : data){
+		/* Find the bin - and maybe find that no bin exists. */
+		auto bin = std::find(used_markers.cbegin(), used_markers.cend(),
+		                     d.marker);
+		if (bin != used_markers.cend()){
+			data_grouped[bin - used_markers.cbegin()].push_back(d.data);
+		}
+	}
+	used_markers.clear();
+
+	/* Create the vantage trees: */
+	std::vector<VantageTree<data_t>> trees;
+	for (const std::vector<data_t>& datavec : data_grouped)
+		trees.emplace_back(datavec, a, f);
+
+	/* Now iterate: */
+	std::vector<interpolated_t<typename data_t::result_t>> res(pts.size());
+	if (parallel){
+		#pragma omp parallel for
+		for (size_t i=0; i<pts.size(); ++i){
+			try {
+				marker_t bin = point_bins[i];
+				res[i] = search_radius_point<failpol>(pts[i].pt,
+				                                data_grouped[bin], trees[bin],
+				                                search_radii, exit_condition,
+				                                kernel);
+			} catch (...) {
+				res[i].res.set_nan();
+				res[i].r = std::nan("");
+			}
+		}
+	} else {
+		for (size_t i=0; i<pts.size(); ++i){
+			try {
+				marker_t bin = point_bins[i];
+				res[i] = search_radius_point<failpol>(pts[i].pt,
+				                                data_grouped[bin], trees[bin],
+				                                search_radii, exit_condition,
+				                                kernel);
+			} catch (...) {
+				res[i].res.set_nan();
+				res[i].r = std::nan("");
+			}
+		}
+	}
+
+
+}
+
+
 
 
 /*

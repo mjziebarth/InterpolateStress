@@ -23,8 +23,10 @@ cdef extern from "api.hpp" namespace "interpolatestress" nogil:
 
     void interpolate_azimuth_uniform(size_t N, const double* lon,
              const double* lat, const double* azi, const double* w,
+             const unsigned short* markers,
              size_t Nr, const double* r, size_t Ng, const double* lon_g,
-             const double* lat_g, double* azi_g, double* azi_std_g,
+             const double* lat_g, const unsigned short* markers_g,
+             double* azi_g, double* azi_std_g,
              double* r_g, double critical_azi_std, size_t Nmin,
              unsigned char failure_policy,
              double a, double f) except+
@@ -32,16 +34,20 @@ cdef extern from "api.hpp" namespace "interpolatestress" nogil:
     void interpolate_azimuth_plunges_uniform(
              size_t N, const double* lon, const double* lat, const double* azi,
              const double* plunge1, const double* plunge2, const double* w,
+             const unsigned short* markers,
              size_t Nr, const double* r, size_t Ng, const double* lon_g,
-             const double* lat_g, double* azi_g, double* azi_std_g,
+             const double* lat_g, const unsigned short* markers_g,
+             double* azi_g, double* azi_std_g,
              double* pl1_g, double* pl1_std_g, double* pl2_g, double* pl2_std_g,
              double* r_g, double critical_azi_std, size_t Nmin,
              unsigned char failure_policy, double a, double f) except+
 
     void interpolate_azimuth_linear(size_t N, const double* lon,
              const double* lat, const double* azi, const double* w,
+             const unsigned short* markers,
              size_t Nr, const double* r, size_t Ng, const double* lon_g,
-             const double* lat_g, double* azi_g, double* azi_std_g,
+             const double* lat_g, const unsigned short* markers_g,
+             double* azi_g, double* azi_std_g,
              double* r_g, double critical_azi_std, size_t Nmin,
              unsigned char failure_policy,
              double a, double f) except+
@@ -49,16 +55,20 @@ cdef extern from "api.hpp" namespace "interpolatestress" nogil:
     void interpolate_azimuth_plunges_linear(
              size_t N, const double* lon, const double* lat, const double* azi,
              const double* plunge1, const double* plunge2, const double* w,
+             const unsigned short* markers,
              size_t Nr, const double* r, size_t Ng, const double* lon_g,
-             const double* lat_g, double* azi_g, double* azi_std_g,
+             const double* lat_g, const unsigned short* markers_g,
+             double* azi_g, double* azi_std_g,
              double* pl1_g, double* pl1_std_g, double* pl2_g, double* pl2_std_g,
              double* r_g, double critical_azi_std, size_t Nmin,
              unsigned char failure_policy, double a, double f) except+
 
     void interpolate_azimuth_gauss(size_t N, const double* lon,
              const double* lat, const double* azi, const double* w,
+             const unsigned short* markers,
              size_t Nr, const double* r, size_t Ng, const double* lon_g,
-             const double* lat_g, double* azi_g, double* azi_std_g,
+             const double* lat_g, const unsigned short* markers_g,
+             double* azi_g, double* azi_std_g,
              double* r_g, double critical_azi_std, size_t Nmin,
              unsigned char failure_policy, double kernel_bandwidth,
              double a, double f) except+
@@ -66,8 +76,10 @@ cdef extern from "api.hpp" namespace "interpolatestress" nogil:
     void interpolate_azimuth_plunges_gauss(
              size_t N, const double* lon, const double* lat, const double* azi,
              const double* plunge1, const double* plunge2, const double* w,
+             const unsigned short* markers,
              size_t Nr, const double* r, size_t Ng, const double* lon_g,
-             const double* lat_g, double* azi_g, double* azi_std_g,
+             const double* lat_g, const unsigned short* markers_g,
+             double* azi_g, double* azi_std_g,
              double* pl1_g, double* pl1_std_g, double* pl2_g, double* pl2_std_g,
              double* r_g, double critical_azi_std, size_t Nmin,
              unsigned char failure_policy, double kernel_bandwidth, double a,
@@ -101,8 +113,10 @@ from .kernel import UniformKernel, GaussianKernel, LinearKernel
 @cython.boundscheck(False)
 def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
                         const double[::1] azi, const double[::1] weight,
+                        const unsigned short[::1] marker,
                         const double[::1] search_radii,
                         const double[::1] lon_g, const double[::1] lat_g,
+                        const unsigned short[::1] marker_g,
                         double critical_azi_std, size_t Nmin,
                         str failure_policy,
                         kernel, double a, double f):
@@ -111,15 +125,20 @@ def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
     axis SHmax of the stress tensor.
 
     Call signature:
-       interpolate_azimuth(lon, lat, azi, weight, search_radii,
-                           lon_g, lat_g, critical_azi_std, Nmin,
-                           kernel, a, f)
+       interpolate_azimuth(lon, lat, azi, weight, marker,
+                           search_radii, lon_g, lat_g,
+                           critical_azi_std, Nmin, kernel,
+                           a, f)
 
     Parameters:
        lon              : Data point longitudes of shape (N,)
        lat              : Data point latitudes of shape (N,)
        azi              : Azimuths at the data points, shape (N,)
        weight           : Weighting of the data points, shape (N,)
+       marker           : Optional markers to group data and grid
+                          points together (e.g. plate labels).
+                          Either shape (N,) if markers should be used
+                          or shape (0,) if not.
        search_radii     : Array of search radii, from large to small.
                           Shape (Nr,)
        lon_g            : Longitudes of the interpolated grid, flattened.
@@ -177,6 +196,23 @@ def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
     if lat_g.size != Ng:
         raise RuntimeError("Shapes of `lon_g` and `lat_g` not equal.")
 
+    cdef const unsigned short* marker_ptr = NULL
+    cdef const unsigned short* marker_g_ptr = NULL
+    if marker.size != N:
+        if marker.size != 0:
+            raise RuntimeError("Shapes of `lon` and `markers` are not "
+                               "equal and shape of `markers` is not 0.")
+        if marker_g.size != 0:
+            raise RuntimeError("Grid points have markers given but data points "
+                               "are unmarked.")
+    elif marker_g.size == Ng:
+        marker_ptr = &marker[0]
+        marker_g_ptr = &marker_g[0]
+    else:
+        if marker_g.size != 0:
+            raise RuntimeError("Shapes of `lon_g` and `markers_g` are not "
+                               "equal and shape of `markers_g` is not 0.")
+
     cdef double[::1] azi_g = np.empty(Ng)
     cdef double[::1] azi_std_g = np.empty(Ng)
     cdef double[::1] r_g = np.empty(Ng)
@@ -205,25 +241,28 @@ def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
     if isinstance(kernel, UniformKernel):
         with nogil:
             interpolate_azimuth_uniform(N, &lon[0], &lat[0], &azi[0],
-                                        &weight[0], Nr, &search_radii[0],
-                                        Ng, &lon_g[0], &lat_g[0], &azi_g[0],
-                                        &azi_std_g[0], &r_g[0],
+                                        &weight[0], marker_ptr, Nr,
+                                        &search_radii[0],
+                                        Ng, &lon_g[0], &lat_g[0], marker_g_ptr,
+                                        &azi_g[0], &azi_std_g[0], &r_g[0],
                                         critical_azi_std, Nmin,
                                         failure_policy_cpp, a, f)
     elif isinstance(kernel, GaussianKernel):
         kernel_relative_bandwidth = kernel._relative_bandwidth
         with nogil:
             interpolate_azimuth_gauss(N, &lon[0], &lat[0], &azi[0], &weight[0],
-                                      Nr, &search_radii[0],
-                                      Ng, &lon_g[0], &lat_g[0], &azi_g[0],
+                                      marker_ptr, Nr, &search_radii[0],
+                                      Ng, &lon_g[0], &lat_g[0], marker_g_ptr,
+                                      &azi_g[0],
                                       &azi_std_g[0], &r_g[0], critical_azi_std,
                                       Nmin, failure_policy_cpp,
                                       kernel_relative_bandwidth, a, f)
     elif isinstance(kernel, LinearKernel):
         with nogil:
             interpolate_azimuth_linear(N, &lon[0], &lat[0], &azi[0], &weight[0],
-                                       Nr, &search_radii[0],
-                                       Ng, &lon_g[0], &lat_g[0], &azi_g[0],
+                                       marker_ptr, Nr, &search_radii[0],
+                                       Ng, &lon_g[0], &lat_g[0], marker_g_ptr,
+                                       &azi_g[0],
                                        &azi_std_g[0], &r_g[0], critical_azi_std,
                                        Nmin, failure_policy_cpp, a, f)
     else:
@@ -239,8 +278,10 @@ def interpolate_azimuth(const double[::1] lon, const double[::1] lat,
 def interpolate_azimuth_plunges(const double[::1] lon, const double[::1] lat,
                         const double[::1] azi, const double[::1] plunge1,
                         const double[::1] plunge2, const double[::1] weight,
+                        const unsigned short[::1] marker,
                         const double[::1] search_radii,
                         const double[::1] lon_g, const double[::1] lat_g,
+                        const unsigned short[::1] marker_g,
                         double critical_azi_std, size_t Nmin,
                         str failure_policy,
                         kernel, double a, double f):
@@ -328,6 +369,23 @@ def interpolate_azimuth_plunges(const double[::1] lon, const double[::1] lat,
     if lat_g.size != Ng:
         raise RuntimeError("Shapes of `lon_g` and `lat_g` not equal.")
 
+    cdef const unsigned short* marker_ptr = NULL
+    cdef const unsigned short* marker_g_ptr = NULL
+    if marker.size != N:
+        if marker.size != 0:
+            raise RuntimeError("Shapes of `lon` and `markers` are not "
+                               "equal and shape of `markers` is not 0.")
+        if marker_g.size != 0:
+            raise RuntimeError("Grid points have markers given but data points "
+                               "are unmarked.")
+    elif marker_g.size == Ng:
+        marker_ptr = &marker[0]
+        marker_g_ptr = &marker_g[0]
+    else:
+        if marker_g.size != 0:
+            raise RuntimeError("Shapes of `lon_g` and `markers_g` are not "
+                               "equal and shape of `markers_g` is not 0.")
+
     cdef double[::1] azi_g = np.empty(Ng)
     cdef double[::1] azi_std_g = np.empty(Ng)
     cdef double[::1] pl1_g = np.empty(Ng)
@@ -362,8 +420,9 @@ def interpolate_azimuth_plunges(const double[::1] lon, const double[::1] lat,
         with nogil:
             interpolate_azimuth_plunges_uniform(N, &lon[0], &lat[0], &azi[0],
                                         &plunge1[0], &plunge2[0], &weight[0],
+                                        marker_ptr,
                                         Nr, &search_radii[0], Ng, &lon_g[0],
-                                        &lat_g[0], &azi_g[0],
+                                        &lat_g[0], marker_g_ptr, &azi_g[0],
                                         &azi_std_g[0], &pl1_g[0], &pl1_std_g[0],
                                         &pl2_g[0], &pl2_std_g[0], &r_g[0],
                                         critical_azi_std, Nmin,
@@ -373,8 +432,10 @@ def interpolate_azimuth_plunges(const double[::1] lon, const double[::1] lat,
         with nogil:
             interpolate_azimuth_plunges_gauss(N, &lon[0], &lat[0], &azi[0],
                                       &plunge1[0], &plunge2[0], &weight[0],
+                                      marker_ptr,
                                       Nr, &search_radii[0], Ng, &lon_g[0],
-                                      &lat_g[0], &azi_g[0], &azi_std_g[0],
+                                      &lat_g[0], marker_g_ptr, &azi_g[0],
+                                      &azi_std_g[0],
                                       &pl1_g[0], &pl1_std_g[0], &pl2_g[0],
                                       &pl2_std_g[0], &r_g[0], critical_azi_std,
                                       Nmin, failure_policy_cpp,
@@ -383,8 +444,10 @@ def interpolate_azimuth_plunges(const double[::1] lon, const double[::1] lat,
         with nogil:
             interpolate_azimuth_plunges_linear(N, &lon[0], &lat[0], &azi[0],
                                        &plunge1[0], &plunge2[0], &weight[0],
+                                       marker_ptr,
                                        Nr, &search_radii[0], Ng, &lon_g[0],
-                                       &lat_g[0], &azi_g[0], &azi_std_g[0],
+                                       &lat_g[0], marker_g_ptr, &azi_g[0],
+                                       &azi_std_g[0],
                                        &pl1_g[0], &pl1_std_g[0], &pl2_g[0],
                                        &pl2_std_g[0], &r_g[0], critical_azi_std,
                                        Nmin, failure_policy_cpp, a, f)
