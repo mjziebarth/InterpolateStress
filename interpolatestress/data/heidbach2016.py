@@ -29,7 +29,30 @@ import codecs
 import numpy as np
 from math import nan
 
-def load_wsm_2016(filename):
+def load_wsm_2016(
+        filename,
+        lon_column: str = "LON",
+        lat_column: str = "LAT",
+        azi_column: str = "AZI",
+        depth_column: str = "DEPTH",
+        date_column: str = "DATE",
+        number_column: str = "NUMBER",
+        s1az_column: str = "S1AZ",
+        s1pl_column: str = "S1PL",
+        s2az_column: str = "S2AZ",
+        s2pl_column: str = "S2PL",
+        s3az_column: str = "S3AZ",
+        s3pl_column: str = "S3PL",
+        mag_int_s1_column: str = "MAG_INT_S1",
+        slopes1_column: str = "SLOPES1",
+        mag_int_s2_column: str = "MAG_INT_S2",
+        slopes2_column: str = "SLOPES2",
+        mag_int_s3_column: str = "MAG_INT_S3",
+        slopes3_column: str = "SLOPES1",
+        pore_magin_column: str = "PORE_MAGIN",
+        pore_slope_column: str = "PORE_SLOPE",
+        ratio_column: str = "RATIO"
+    ):
     """
 
     """
@@ -52,28 +75,68 @@ def load_wsm_2016(filename):
 
     # Conversion function for fields of the table:
     field_types \
-      = {"LON"      : float,
-         "LAT"      : float,
-         "AZI"      : float,
-         "DEPTH"    : float,
-         "DATE"     : int,
-         "NUMBER"     : int,
-         "S1AZ"       : int,
-         "S1PL"       : int,
-         "S2AZ"       : int,
-         "S2PL"       : int,
-         "S3AZ"       : int,
-         "S3PL"       : int,
-         "MAG_INT_S1" : float,
-         "SLOPES1"    : float,
-         "MAG_INT_S2" : float,
-         "SLOPES2"    : float,
-         "MAG_INT_S3" : float,
-         "SLOPES3"    : float,
-         "PORE_MAGIN" : float,
-         "PORE_SLOPE" : float,
-         "RATIO"      : float
+      = {lon_column      : float,
+         lat_column  : float,
+         azi_column      : float,
+         depth_column    : float,
+         date_column     : int,
+         number_column     : int,
+         s1az_column       : int,
+         s1pl_column       : int,
+         s2az_column       : int,
+         s2pl_column       : int,
+         s3az_column       : int,
+         s3pl_column       : int,
+         mag_int_s1_column : float,
+         slopes3_column    : float,
+         mag_int_s2_column : float,
+         slopes2_column    : float,
+         mag_int_s3_column : float,
+         slopes3_column    : float,
+         pore_magin_column : float,
+         pore_slope_column : float,
+         ratio_column      : float
     }
+
+    # Mapping potentially differently labeled columns to
+    # standardized names:
+    field2standard: dict[str,str]\
+      = {
+        lon_column : "LON",
+        lat_column : "LAT",
+        azi_column : "AZI",
+        depth_column : "DEPTH",
+        date_column : "DATE",
+        number_column : "NUMBER",
+        s1az_column : "S1AZ",
+        s1pl_column : "S1PL",
+        s2az_column :  "S2AZ",
+        s2pl_column : "S2PL",
+        s3az_column : "S3AZ",
+        s3pl_column : "S3PL",
+        mag_int_s1_column : "MAG_INT_S1",
+        slopes1_column : "SLOPES1",
+        mag_int_s2_column : "MAG_INT_S2",
+        slopes2_column : "SLOPES2",
+        mag_int_s3_column : "MAG_INT_S3",
+        slopes3_column : "SLOPES1",
+        pore_magin_column : "PORE_MAGIN",
+        pore_slope_column : "PORE_SLOPE",
+        ratio_column : "RATIO"
+    }
+
+    # Ensure that now there is no non-uniqueness of the column names:
+    standard_header = set(field2standard.values())
+    for h in header:
+        if h in standard_header and field2standard[h] != h:
+            raise ValueError("If the standard header names are used, "
+                "they shall refer to their standard meaning. Offending "
+                "column header: " + str(h)
+            )
+
+    # Transform the header, potentially replacing CSV column names
+    # with standard column names:
+    header = [field2standard[h] if h in field2standard else h for h in header]
 
     def convert_field(field, col):
         if col in field_types:
