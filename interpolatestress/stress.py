@@ -192,26 +192,26 @@ class StressTensor:
             else:
                 raise TypeError("`table` has to be a StressTable instance.")
 
-        data_lon = np.ascontiguousarray(table.lon)
-        data_lat = np.ascontiguousarray(table.lat)
-        data_azimuth = np.ascontiguousarray(table.azimuth)
+        data_lon = np.ascontiguousarray(table.lon, dtype=np.double)
+        data_lat = np.ascontiguousarray(table.lat, dtype=np.double)
+        data_azimuth = np.ascontiguousarray(table.azimuth, dtype=np.double)
         if table.plunge1 is None or table.plunge2 is None:
             raise RuntimeError("Plunges are needed in function "
                                "`critical_stress_interpolated`. If no plunges "
                                "are available, consider using the "
                                "`ziebarth_et_al_2020` method.")
-        data_plunge1 = np.ascontiguousarray(table.plunge1)
-        data_plunge2 = np.ascontiguousarray(table.plunge2)
-        data_weight = np.ascontiguousarray(table.weight)
-        data_R = np.ascontiguousarray(table.stress_ratio)
+        data_plunge1 = np.ascontiguousarray(table.plunge1, dtype=np.double)
+        data_plunge2 = np.ascontiguousarray(table.plunge2, dtype=np.double)
+        data_weight = np.ascontiguousarray(table.weight, dtype=np.double)
+        data_R = np.ascontiguousarray(table.stress_ratio, dtype=np.double)
 
         # Sanity check all other data:
-        search_radii = np.ascontiguousarray(search_radii)
-        lon = np.array(lon,copy=False)
-        lat = np.array(lat,copy=False)
+        search_radii = np.ascontiguousarray(search_radii, dtype=np.double)
+        lon = np.ascontiguousarray(lon, dtype=np.double)
+        lat = np.ascontiguousarray(lat, dtype=np.double)
         shape = lon.shape
-        long = np.ascontiguousarray(lon.reshape(-1))
-        latg = np.ascontiguousarray(lat.reshape(-1))
+        long = np.ascontiguousarray(lon.reshape(-1), dtype=np.double)
+        latg = np.ascontiguousarray(lat.reshape(-1), dtype=np.double)
         Nmin = int(Nmin)
         a = float(a)
         f = float(f)
