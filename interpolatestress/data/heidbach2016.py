@@ -28,6 +28,7 @@ import csv
 import codecs
 import numpy as np
 from math import nan
+from typing import Literal
 
 def load_wsm_2016(
         filename,
@@ -51,7 +52,8 @@ def load_wsm_2016(
         slopes3_column: str = "SLOPES1",
         pore_magin_column: str = "PORE_MAGIN",
         pore_slope_column: str = "PORE_SLOPE",
-        ratio_column: str = "RATIO"
+        ratio_column: str = "RATIO",
+        regime_column: str = "REGIME"
     ):
     """
 
@@ -72,6 +74,16 @@ def load_wsm_2016(
 
     # Header with all labels:
     header = [str(t) for t in table[0] if len(t) > 0]
+
+    def regime_convert(r: Literal['NF','SS','TF','U']) -> float:
+        if r == 'TF':
+            return 0.0
+        elif r == 'SS':
+            return 1.0
+        elif r == 'NF':
+            return 2.0
+        elif r == 'U':
+            return nan
 
     # Conversion function for fields of the table:
     field_types \
@@ -95,7 +107,8 @@ def load_wsm_2016(
          "SLOPES3"    : float,
          "PORE_MAGIN" : float,
          "PORE_SLOPE" : float,
-         "RATIO"      : float
+         "RATIO"      : float,
+         "REGIME"     : regime_convert
     }
 
     # Mapping potentially differently labeled columns to
@@ -122,7 +135,8 @@ def load_wsm_2016(
         slopes3_column    : "SLOPES3",
         pore_magin_column : "PORE_MAGIN",
         pore_slope_column : "PORE_SLOPE",
-        ratio_column      : "RATIO"
+        ratio_column      : "RATIO",
+        regime_column     : "REGIME"
     }
 
     # Ensure that now there is no non-uniqueness of the column names:
